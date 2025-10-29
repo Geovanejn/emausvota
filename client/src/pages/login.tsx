@@ -114,40 +114,40 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background">
       <div className="h-2 bg-primary w-full" />
       
-      <div className="container mx-auto px-4">
-        <div className="max-w-md mx-auto mt-16">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-                <UserCircle className="w-10 h-10 text-primary-foreground" />
+      <div className="container mx-auto px-4 py-4 sm:py-0">
+        <div className="max-w-md mx-auto mt-8 sm:mt-16">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-3 sm:mb-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center">
+                <UserCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Emaús Vota</h1>
-            <p className="text-muted-foreground">Sistema de votação da UMP Emaús</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Emaús Vota</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Sistema de votação da UMP Emaús</p>
           </div>
 
           <Card className="border-border shadow-md">
-            <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
                 {step === "email" ? (
                   <>
-                    <Mail className="w-6 h-6" />
+                    <Mail className="w-5 h-5 sm:w-6 sm:h-6" />
                     Entrar
                   </>
                 ) : (
                   <>
-                    <KeyRound className="w-6 h-6" />
+                    <KeyRound className="w-5 h-5 sm:w-6 sm:h-6" />
                     Verificar Código
                   </>
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 {step === "email" 
                   ? "Digite seu email para receber o código de verificação" 
                   : `Código enviado para ${email}`}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {step === "email" ? (
                 <form onSubmit={emailForm.handleSubmit(onRequestCode)} className="space-y-4">
                   <div className="space-y-2">
@@ -184,7 +184,7 @@ export default function LoginPage() {
                       type="text"
                       placeholder="000000"
                       maxLength={6}
-                      className="text-center text-2xl tracking-widest"
+                      className="text-center text-xl sm:text-2xl tracking-widest"
                       data-testid="input-code"
                       {...codeForm.register("code")}
                     />
