@@ -609,10 +609,10 @@ export default function AdminPage() {
                       <div className="space-y-3">
                         <div className="p-3 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg">
                           <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
-                            Presentes: {presentCountData?.presentCount || 0} de {members.length} membros
+                            Presentes: {presentCountData?.presentCount || 0} de {members.filter(m => !m.isAdmin).length} membros
                           </p>
                           <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">
-                            Marque os presentes antes de iniciar a votação
+                            Selecione os presentes e clique em confirmar
                           </p>
                         </div>
 
@@ -652,6 +652,20 @@ export default function AdminPage() {
                             );
                           })}
                         </div>
+
+                        <Button
+                          className="w-full"
+                          onClick={() => {
+                            toast({
+                              title: "Presença confirmada!",
+                              description: `${presentCountData?.presentCount || 0} membros marcados como presentes`,
+                            });
+                          }}
+                          data-testid="button-confirm-attendance"
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          Confirmar Presença
+                        </Button>
                       </div>
                     )}
                   </div>

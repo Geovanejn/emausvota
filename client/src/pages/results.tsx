@@ -99,7 +99,7 @@ export default function ResultsPage() {
             )}
           </div>
           <div className="flex gap-2 self-end sm:self-auto">
-            {!results?.isActive && winners && winners.length > 0 && (
+            {!results?.isActive && winners && winners.length > 0 && user?.isAdmin && (
               <Button 
                 variant="default" 
                 onClick={handleExportImage} 
