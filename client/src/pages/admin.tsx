@@ -151,6 +151,26 @@ export default function AdminPage() {
     },
   });
 
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (memberId: number) => {
+      return await apiRequest("DELETE", `/api/admin/members/${memberId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      toast({
+        title: "Membro removido!",
+        description: "O membro foi removido com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao remover membro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     logout();
     setLocation("/");
@@ -212,6 +232,12 @@ export default function AdminPage() {
       fullName: newMember.fullName,
       email: newMember.email,
     });
+  };
+
+  const handleDeleteMember = (memberId: number) => {
+    if (confirm("Tem certeza que deseja remover este membro?")) {
+      deleteMemberMutation.mutate(memberId);
+    }
   };
 
   const isLoading = loadingElection || loadingPositions || loadingCandidates;
@@ -362,6 +388,58 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Membros Cadastrados</CardTitle>
+                <CardDescription>
+                  {members.length} membros registrados no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {members.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Nenhum membro cadastrado ainda</p>
+                    <p className="text-sm mt-1">Cadastre membros para permitir votação</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/50">
+                          <th className="text-left px-6 py-3 font-semibold text-sm">Nome</th>
+                          <th className="text-left px-6 py-3 font-semibold text-sm">Email</th>
+                          <th className="text-right px-6 py-3 font-semibold text-sm">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {members.map((member) => (
+                          <tr 
+                            key={member.id} 
+                            className="border-b border-border hover:bg-muted/30 transition-colors"
+                            data-testid={`row-member-${member.id}`}
+                          >
+                            <td className="px-6 py-4" data-testid={`text-member-name-${member.id}`}>{member.fullName}</td>
+                            <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
+                            <td className="px-6 py-4 text-right">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteMember(member.id)}
+                                data-testid={`button-delete-member-${member.id}`}
+                              >
+                                Remover
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
