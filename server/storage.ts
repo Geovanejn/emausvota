@@ -42,6 +42,8 @@ export interface IStorage {
   getElectionById(id: number): Election | undefined;
   createElection(name: string): Election;
   closeElection(id: number): void;
+  finalizeElection(id: number): void;
+  getElectionHistory(): Election[];
   setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void;
   
   // Election Positions management
@@ -211,6 +213,27 @@ export class SQLiteStorage implements IStorage {
     
     // Close all election_positions
     db.prepare("UPDATE election_positions SET status = 'completed', closed_at = datetime('now') WHERE election_id = ?").run(id);
+  }
+
+  finalizeElection(id: number): void {
+    const stmt = db.prepare("UPDATE elections SET is_active = 0, closed_at = datetime('now') WHERE id = ?");
+    stmt.run(id);
+    
+    // Close all election_positions if not already closed
+    db.prepare("UPDATE election_positions SET status = 'completed', closed_at = datetime('now') WHERE election_id = ? AND status != 'completed'").run(id);
+  }
+
+  getElectionHistory(): Election[] {
+    const stmt = db.prepare("SELECT * FROM elections WHERE is_active = 0 AND closed_at IS NOT NULL ORDER BY closed_at DESC");
+    const rows = stmt.all() as any[];
+    
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+      closedAt: row.closed_at,
+    }));
   }
 
   setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void {

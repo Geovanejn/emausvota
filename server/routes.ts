@@ -246,6 +246,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/elections/:id/finalize", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      
+      const election = storage.getElectionById(electionId);
+      if (!election) {
+        return res.status(404).json({ message: "Eleição não encontrada" });
+      }
+
+      // Verificar se todos os cargos estão decididos
+      const positions = storage.getElectionPositions(electionId);
+      const allCompleted = positions.every(p => p.status === 'completed');
+      
+      if (!allCompleted) {
+        return res.status(400).json({ message: "Todos os cargos devem estar decididos antes de finalizar a eleição" });
+      }
+
+      storage.finalizeElection(electionId);
+      res.json({ message: "Eleição finalizada com sucesso" });
+    } catch (error) {
+      console.error("Finalize election error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao finalizar eleição" 
+      });
+    }
+  });
+
+  app.get("/api/elections/history", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const history = storage.getElectionHistory();
+      res.json(history);
+    } catch (error) {
+      console.error("Get election history error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar histórico de eleições" 
+      });
+    }
+  });
+
   // Election Attendance endpoints
   app.get("/api/elections/:id/attendance", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
@@ -611,7 +650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/results/:electionId", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/results/:electionId", async (req, res) => {
     try {
       const electionId = parseInt(req.params.electionId);
       const results = storage.getElectionResults(electionId);

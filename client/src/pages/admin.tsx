@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
@@ -142,6 +143,11 @@ export default function AdminPage() {
     enabled: !!activeElection,
   });
 
+  // Election history
+  const { data: electionHistory = [] } = useQuery<Election[]>({
+    queryKey: ["/api/elections/history"],
+  });
+
   const createElectionMutation = useMutation({
     mutationFn: async (name: string) => {
       return await apiRequest("POST", "/api/elections", { name });
@@ -177,6 +183,28 @@ export default function AdminPage() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao encerrar eleição",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const finalizeElectionMutation = useMutation({
+    mutationFn: async (electionId: number) => {
+      return await apiRequest("POST", `/api/elections/${electionId}/finalize`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections/history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Eleição finalizada!",
+        description: "A eleição foi arquivada no histórico",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao finalizar eleição",
         description: error.message,
         variant: "destructive",
       });
@@ -375,6 +403,13 @@ export default function AdminPage() {
     }
   };
 
+  const handleFinalizeElection = () => {
+    if (!activeElection) return;
+    if (confirm("Tem certeza que deseja finalizar a eleição? Ela será arquivada no histórico e não poderá mais ser modificada.")) {
+      finalizeElectionMutation.mutate(activeElection.id);
+    }
+  };
+
   const handleCreateElection = () => {
     const currentYear = new Date().getFullYear();
     const nextYear = currentYear + 1;
@@ -452,13 +487,20 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Tabs defaultValue="manage" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+            <TabsTrigger value="manage" data-testid="tab-manage">Gerenciar</TabsTrigger>
+            <TabsTrigger value="history" data-testid="tab-history">Histórico</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="manage">
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Carregando...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className={activeElection ? "border-green-500" : "border-border"}>
                 <CardHeader>
                   <CardTitle className="text-xl">Status da Eleição</CardTitle>
@@ -774,7 +816,7 @@ export default function AdminPage() {
                             </p>
                           </div>
                           <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                            Você pode exportar os resultados ou encerrar a eleição quando estiver pronto.
+                            Você pode exportar os resultados e finalizar a eleição.
                           </p>
                         </div>
                         <Button
@@ -785,6 +827,16 @@ export default function AdminPage() {
                         >
                           <Download className="w-4 h-4 mr-2" />
                           Exportar Resultados (Imagem)
+                        </Button>
+                        <Button
+                          className="w-full"
+                          variant="default"
+                          onClick={handleFinalizeElection}
+                          disabled={finalizeElectionMutation.isPending}
+                          data-testid="button-finalize-election"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" />
+                          {finalizeElectionMutation.isPending ? "Finalizando..." : "Finalizar Eleição"}
                         </Button>
                       </div>
                     )}
@@ -940,6 +992,51 @@ export default function AdminPage() {
             </Card>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="history">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Histórico de Eleições</CardTitle>
+                  <CardDescription>Visualize eleições finalizadas anteriormente</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {electionHistory.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      Nenhuma eleição finalizada ainda
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {electionHistory.map((election) => (
+                        <Card key={election.id} className="hover-elevate" data-testid={`card-election-${election.id}`}>
+                          <CardHeader>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{election.name}</CardTitle>
+                                <CardDescription className="text-sm">
+                                  Finalizada em {new Date(election.closedAt || '').toLocaleDateString('pt-BR')}
+                                </CardDescription>
+                              </div>
+                              <Button
+                                variant="outline"
+                                onClick={() => setLocation(`/results?electionId=${election.id}`)}
+                                data-testid={`button-view-election-${election.id}`}
+                              >
+                                <ChartBar className="w-4 h-4 mr-2" />
+                                Ver Resultados
+                              </Button>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={isCreateElectionOpen} onOpenChange={setIsCreateElectionOpen}>

@@ -10,9 +10,20 @@ import type { ElectionResults } from "@shared/schema";
 export default function ResultsPage() {
   const { user, logout, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Get electionId from query string
+  const searchParams = new URLSearchParams(window.location.search);
+  const electionId = searchParams.get('electionId');
 
   const { data: results, isLoading } = useQuery<ElectionResults | null>({
-    queryKey: ["/api/results/latest"],
+    queryKey: electionId ? ["/api/results", electionId] : ["/api/results/latest"],
+    queryFn: electionId 
+      ? async () => {
+          const response = await fetch(`/api/results/${electionId}`);
+          if (!response.ok) throw new Error('Failed to fetch results');
+          return response.json();
+        }
+      : undefined,
   });
 
   const handleLogout = () => {

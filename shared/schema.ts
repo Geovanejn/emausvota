@@ -49,6 +49,7 @@ export const elections = sqliteTable("elections", {
   name: text("name").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  closedAt: text("closed_at"),
 });
 
 // Election Winners table - tracks which candidate won each position (for tie resolution in 3rd scrutiny)
