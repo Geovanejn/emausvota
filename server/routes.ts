@@ -450,19 +450,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/elections/:id/winners", authenticateToken, async (req: AuthRequest, res) => {
-    try {
-      const electionId = parseInt(req.params.id);
-      const winners = storage.getElectionWinners(electionId);
-      res.json(winners);
-    } catch (error) {
-      console.error("Get winners error:", error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Erro ao buscar vencedores" 
-      });
-    }
-  });
-
   app.post("/api/candidates", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertCandidateSchema.parse(req.body);

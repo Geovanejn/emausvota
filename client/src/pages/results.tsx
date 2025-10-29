@@ -42,7 +42,15 @@ export default function ResultsPage() {
     queryKey: results?.electionId ? ["/api/elections", results.electionId, "winners"] : [],
     queryFn: async () => {
       if (!results?.electionId) return [];
-      const response = await fetch(`/api/elections/${results.electionId}/winners`);
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const response = await fetch(`/api/elections/${results.electionId}/winners`, {
+        headers,
+        credentials: "include",
+      });
       if (!response.ok) throw new Error('Failed to fetch winners');
       return response.json();
     },
