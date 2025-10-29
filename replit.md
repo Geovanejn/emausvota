@@ -46,7 +46,9 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
 - ✅ **Share results button** - Export election results as image with winners, votes, UMP logo and scripture verse
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 5:4 (Feed - 1080x864) aspect ratios
-- ✅ **Improved logo display** - Logo increased to 150px height, centered at bottom with proper padding to prevent cutoff
+- ✅ **Optimized layouts per format:**
+  - **9:16 (Stories):** Centered single column (max 760px), logo 200px, cards 32px gap, optimized for vertical viewing
+  - **5:4 (Feed):** 2-column grid layout (2-2-1), 5th position centered, logo 160px, compact spacing to fit all content
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 
