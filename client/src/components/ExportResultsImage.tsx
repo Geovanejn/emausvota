@@ -29,7 +29,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
     const dimensions = aspectRatio === "9:16" 
       ? { width: 1080, height: 1920 }
-      : { width: 1080, height: 1350 };  // 4:5 ratio
+      : { width: 1080, height: 1350 };
 
     const positionOrder = [
       "Presidente",
@@ -50,13 +50,16 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
       return ordinals[scrutiny - 1] || `${scrutiny}º`;
     };
 
+    const yearMatch = electionTitle.match(/(\d{4})\/(\d{4})/);
+    const year = yearMatch ? yearMatch[2] : new Date().getFullYear().toString();
+
     useImperativeHandle(ref, () => ({
       exportImage: async () => {
         if (!imageRef.current) return;
 
         try {
           const canvas = await html2canvas(imageRef.current, {
-            backgroundColor: "#ffffff",
+            backgroundColor: "#E5E5E5",
             scale: 2,
             logging: false,
             width: dimensions.width,
@@ -84,80 +87,59 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
     const is916 = aspectRatio === "9:16";
 
-    // Style configuration per aspect ratio
-    const styles = is916 ? {
-      container: { padding: "60px 40px 50px 40px" },
-      title: { fontSize: "64px", marginBottom: "50px", letterSpacing: "-0.5px" },
-      winnersContainer: { maxWidth: "780px", margin: "0 auto", gap: "24px" },
-      card: { 
-        padding: "24px", 
-        gap: "24px",
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-        borderRadius: "12px"
-      },
-      photo: { width: "100px", height: "100px" },
-      positionFont: "20px",
-      nameFont: "32px",
-      detailsFont: "16px",
-      scripture: { 
-        fontSize: "18px", 
-        padding: "32px 28px", 
-        marginBottom: "36px",
-        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)",
-        borderRadius: "12px"
-      },
-      scriptureRef: "15px",
-      logo: "220px",
-    } : {
-      container: { padding: "50px 40px 40px 40px" },
-      title: { fontSize: "56px", marginBottom: "36px", letterSpacing: "-0.5px" },
-      winnersContainer: { gap: "20px" },
-      card: { 
-        padding: "20px 24px", 
-        gap: "20px",
-        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
-        borderRadius: "12px"
-      },
-      photo: { width: "80px", height: "80px" },
-      positionFont: "18px",
-      nameFont: "26px",
-      detailsFont: "14px",
-      scripture: { 
-        fontSize: "16px", 
-        padding: "24px 20px", 
-        marginBottom: "28px",
-        boxShadow: "0 2px 6px rgba(0, 0, 0, 0.06)",
-        borderRadius: "12px"
-      },
-      scriptureRef: "13px",
-      logo: "180px",
-    };
-
     const WinnerCard = ({ winner }: { winner: Winner }) => (
       <div
-        key={winner.positionId}
         style={{
+          position: "relative",
           display: "flex",
           alignItems: "center",
-          gap: styles.card.gap,
-          padding: styles.card.padding,
-          borderLeft: "5px solid #FFA500",
-          backgroundColor: "#F9F9F9",
-          borderRadius: styles.card.borderRadius,
-          boxShadow: styles.card.boxShadow,
+          gap: is916 ? "16px" : "12px",
+          backgroundColor: "#FFFFFF",
+          borderRadius: "20px",
+          padding: is916 ? "20px 16px" : "16px 12px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          minHeight: is916 ? "120px" : "100px",
         }}
       >
-        {/* Photo */}
+        {/* Yellow tag on top */}
         <div
           style={{
-            width: styles.photo.width,
-            height: styles.photo.height,
+            position: "absolute",
+            top: "-16px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "#FFD700",
+            borderRadius: "20px",
+            padding: is916 ? "8px 32px" : "6px 24px",
+            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: is916 ? "18px" : "15px",
+              fontWeight: "700",
+              fontStyle: "italic",
+              color: "#000000",
+              margin: 0,
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {winner.positionName}
+          </p>
+        </div>
+
+        {/* Photo on the left */}
+        <div
+          style={{
+            width: is916 ? "90px" : "75px",
+            height: is916 ? "90px" : "75px",
             borderRadius: "50%",
             backgroundColor: "#E8E8E8",
             overflow: "hidden",
             flexShrink: 0,
             border: "3px solid #FFFFFF",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
           }}
         >
           {winner.photoUrl ? (
@@ -178,7 +160,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: is916 ? "36px" : "28px",
+                fontSize: is916 ? "28px" : "24px",
                 fontWeight: "700",
                 color: "#FFA500",
                 backgroundColor: "#FFF7E6",
@@ -189,39 +171,28 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           )}
         </div>
 
-        {/* Info */}
+        {/* Text content on the right - LEFT ALIGNED */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p
             style={{
-              fontSize: styles.positionFont,
+              fontSize: is916 ? "20px" : "16px",
               fontWeight: "700",
-              color: "#FFA500",
+              color: "#000000",
               marginBottom: "6px",
               textTransform: "uppercase",
-              letterSpacing: "0.5px",
-            }}
-          >
-            {winner.positionName}
-          </p>
-          <p
-            style={{
-              fontSize: styles.nameFont,
-              fontWeight: "700",
-              color: "#333333",
-              marginBottom: "8px",
+              lineHeight: "1.2",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
-              lineHeight: "1.2",
             }}
           >
             {winner.candidateName}
           </p>
           <p
             style={{
-              fontSize: styles.detailsFont,
-              color: "#666666",
-              fontWeight: "500",
+              fontSize: is916 ? "13px" : "11px",
+              color: "#000000",
+              fontWeight: "400",
             }}
           >
             {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
@@ -237,80 +208,117 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           style={{
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,
-            backgroundColor: "#FFFFFF",
-            padding: styles.container.padding,
+            backgroundColor: "#E5E5E5",
+            padding: is916 ? "60px 40px 50px 40px" : "50px 40px 40px 40px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Header */}
-          <div>
+          {/* Background watermark pattern */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              opacity: 0.03,
+              fontSize: is916 ? "180px" : "150px",
+              fontWeight: "900",
+              color: "#000000",
+              display: "flex",
+              flexWrap: "wrap",
+              alignContent: "flex-start",
+              gap: is916 ? "40px" : "30px",
+              padding: is916 ? "100px 20px" : "80px 20px",
+              transform: "rotate(-15deg)",
+              zIndex: 0,
+            }}
+          >
+            {Array.from({ length: 20 }).map((_, i) => (
+              <span key={i} style={{ whiteSpace: "nowrap" }}>ELEIÇÃO</span>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            {/* Title */}
             <h1
               style={{
-                fontSize: styles.title.fontSize,
+                fontSize: is916 ? "80px" : "68px",
                 fontWeight: "800",
-                color: "#333333",
+                color: "#000000",
                 textAlign: "center",
-                marginBottom: styles.title.marginBottom,
-                lineHeight: "1.1",
-                letterSpacing: styles.title.letterSpacing,
+                marginBottom: is916 ? "60px" : "40px",
+                lineHeight: "1",
+                letterSpacing: "-1px",
               }}
             >
-              {electionTitle}
+              <span style={{ fontWeight: "800" }}>ELEIÇÃO</span>{" "}
+              <span
+                style={{
+                  fontWeight: "800",
+                  color: "transparent",
+                  WebkitTextStroke: "2px #000000",
+                }}
+              >
+                {year}
+              </span>
             </h1>
 
-            {/* Winners List */}
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: styles.winnersContainer.gap,
-              ...(is916 ? {
-                maxWidth: styles.winnersContainer.maxWidth,
-                margin: styles.winnersContainer.margin,
-              } : {})
-            }}>
-              {sortedWinners.map((winner) => (
-                <WinnerCard key={winner.positionId} winner={winner} />
-              ))}
+            {/* Winners Grid - 2x2 + 1 */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: is916 ? "36px 24px" : "28px 20px",
+                maxWidth: is916 ? "900px" : "100%",
+                margin: "0 auto",
+              }}
+            >
+              {/* Row 1: Presidente, Vice-Presidente */}
+              {sortedWinners[0] && <WinnerCard winner={sortedWinners[0]} />}
+              {sortedWinners[1] && <WinnerCard winner={sortedWinners[1]} />}
+              
+              {/* Row 2: 1º Secretário, 2º Secretário */}
+              {sortedWinners[2] && <WinnerCard winner={sortedWinners[2]} />}
+              {sortedWinners[3] && <WinnerCard winner={sortedWinners[3]} />}
+              
+              {/* Row 3: Tesoureiro - centered, spans 2 columns */}
+              {sortedWinners[4] && (
+                <div style={{ gridColumn: "1 / -1", maxWidth: is916 ? "440px" : "400px", margin: "0 auto", width: "100%" }}>
+                  <WinnerCard winner={sortedWinners[4]} />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Footer */}
-          <div>
+          <div style={{ position: "relative", zIndex: 1 }}>
             {/* Scripture */}
             <div
               style={{
                 textAlign: "center",
-                padding: styles.scripture.padding,
-                backgroundColor: "#F9F9F9",
-                borderRadius: styles.scripture.borderRadius,
-                marginBottom: styles.scripture.marginBottom,
-                boxShadow: styles.scripture.boxShadow,
-                borderLeft: "4px solid #FFD166",
+                marginBottom: is916 ? "40px" : "32px",
               }}
             >
               <p
                 style={{
-                  fontSize: styles.scripture.fontSize,
+                  fontSize: is916 ? "18px" : "15px",
                   fontStyle: "italic",
-                  color: "#555555",
-                  lineHeight: "1.6",
-                  marginBottom: "8px",
-                  fontWeight: "500",
+                  color: "#000000",
+                  lineHeight: "1.5",
+                  marginBottom: "0",
+                  fontWeight: "400",
                 }}
               >
-                "Porque de Deus somos cooperadores; lavoura de Deus, edifício de Deus sois vós."
-              </p>
-              <p
-                style={{
-                  fontSize: styles.scriptureRef,
-                  color: "#FFA500",
-                  fontWeight: "700",
-                }}
-              >
-                1 Coríntios 3:9
+                Porque de Deus somos cooperadores; lavoura de Deus,
+                <br />
+                edifício de Deus sois vós. - 1 coríntios 3:9
               </p>
             </div>
 
@@ -323,9 +331,9 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             }}>
               <img
                 src={logoUrl}
-                alt="UMP Emaús"
+                alt="emaús"
                 style={{
-                  height: styles.logo,
+                  height: is916 ? "80px" : "70px",
                   maxWidth: "100%",
                   objectFit: "contain",
                 }}

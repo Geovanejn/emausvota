@@ -46,16 +46,19 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
 - ✅ **Share results button** - Export election results as professional, institutional image with winners, votes, UMP logo and scripture verse
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
-- ✅ **Modern institutional design:**
-  - Clean white background (#FFFFFF) with light gray cards (#F9F9F9)
-  - Orange (#FFA500) and yellow (#FFD166) accents for highlights
-  - Professional sans-serif typography with bold weights
-  - Subtle shadows (0 2px 8px rgba(0,0,0,0.08)) and rounded corners (12px)
-  - Bordered circular photos with white ring and shadow
-  - Uppercase position labels with letter spacing
+- ✅ **Canva-inspired design (replicated exactly):**
+  - Light gray background (#E5E5E5) with white cards (#FFFFFF)
+  - Yellow tags (#FFD700) on top of each card with position name in italic bold
+  - Title: "ELEIÇÃO" bold + year outline style
+  - Card layout: Yellow tag → Name → Details → Photo at bottom (circular)
+  - 2x2 + 1 grid layout (Presidente/Vice | Secretários | Tesoureiro centered)
+  - Photo positioned BELOW name (not beside), centered in card
+  - Rounded white cards (20px radius) with shadow
+  - Circular photos with white border and shadow
+  - Scripture in italic at bottom, logo centered
 - ✅ **Optimized layouts per format:**
-  - **9:16 (Stories):** Centered vertical cards (max 780px), logo 220px, 24px gaps, perfect for Instagram/Facebook Stories
-  - **4:5 (Feed):** Full-width horizontal cards, logo 180px, 20px gaps, ideal for Instagram/Facebook Feed posts
+  - **9:16 (Stories):** 2-column grid, 900px max-width, 36x24px gaps, 100px photos, 80px logo
+  - **4:5 (Feed):** 2-column grid, full-width, 28x20px gaps, 85px photos, 70px logo
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 
