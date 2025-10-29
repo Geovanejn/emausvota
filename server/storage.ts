@@ -15,6 +15,10 @@ import type {
   InsertVerificationCode,
   CandidateWithDetails,
   ElectionResults,
+  ElectionPosition,
+  InsertElectionPosition,
+  ElectionAttendance,
+  InsertElectionAttendance,
 } from "@shared/schema";
 
 const dbDir = path.join(process.cwd(), "data");
@@ -38,8 +42,20 @@ export interface IStorage {
   getElectionById(id: number): Election | undefined;
   createElection(name: string): Election;
   closeElection(id: number): void;
-  advanceScrutiny(electionId: number): void;
   setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void;
+  
+  // Election Positions management
+  getElectionPositions(electionId: number): ElectionPosition[];
+  getActiveElectionPosition(electionId: number): ElectionPosition | null;
+  advancePositionScrutiny(electionPositionId: number): void;
+  openNextPosition(electionId: number): ElectionPosition | null;
+  completePosition(electionPositionId: number): void;
+  
+  // Election Attendance management
+  getElectionAttendance(electionId: number): ElectionAttendance[];
+  getPresentCount(electionId: number): number;
+  setMemberAttendance(electionId: number, memberId: number, isPresent: boolean): void;
+  initializeAttendance(electionId: number): void;
   
   getAllCandidates(): Candidate[];
   getCandidatesByElection(electionId: number): CandidateWithDetails[];
@@ -146,7 +162,6 @@ export class SQLiteStorage implements IStorage {
       id: row.id,
       name: row.name,
       isActive: Boolean(row.is_active),
-      currentScrutiny: row.current_scrutiny,
       createdAt: row.created_at,
     };
   }
@@ -160,7 +175,6 @@ export class SQLiteStorage implements IStorage {
       id: row.id,
       name: row.name,
       isActive: Boolean(row.is_active),
-      currentScrutiny: row.current_scrutiny,
       createdAt: row.created_at,
     };
   }
@@ -173,6 +187,15 @@ export class SQLiteStorage implements IStorage {
     );
     const row = stmt.get(name) as any;
     
+    // Create election_positions for all positions
+    const positions = this.getAllPositions();
+    for (let i = 0; i < positions.length; i++) {
+      db.prepare(`
+        INSERT INTO election_positions (election_id, position_id, order_index, status, current_scrutiny)
+        VALUES (?, ?, ?, ?, 1)
+      `).run(row.id, positions[i].id, i, i === 0 ? 'active' : 'pending');
+    }
+    
     return {
       id: row.id,
       name: row.name,
@@ -184,11 +207,9 @@ export class SQLiteStorage implements IStorage {
   closeElection(id: number): void {
     const stmt = db.prepare("UPDATE elections SET is_active = 0 WHERE id = ?");
     stmt.run(id);
-  }
-
-  advanceScrutiny(electionId: number): void {
-    const stmt = db.prepare("UPDATE elections SET current_scrutiny = current_scrutiny + 1 WHERE id = ? AND current_scrutiny < 3");
-    stmt.run(electionId);
+    
+    // Close all election_positions
+    db.prepare("UPDATE election_positions SET status = 'completed', closed_at = datetime('now') WHERE election_id = ?").run(id);
   }
 
   setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void {
@@ -202,6 +223,196 @@ export class SQLiteStorage implements IStorage {
     } else {
       const insertStmt = db.prepare("INSERT INTO election_winners (election_id, position_id, candidate_id, won_at_scrutiny) VALUES (?, ?, ?, ?)");
       insertStmt.run(electionId, positionId, candidateId, scrutiny);
+    }
+    
+    // Mark the election_position as completed
+    db.prepare("UPDATE election_positions SET status = 'completed', closed_at = datetime('now') WHERE election_id = ? AND position_id = ?")
+      .run(electionId, positionId);
+  }
+
+  // Election Positions management
+  getElectionPositions(electionId: number): ElectionPosition[] {
+    const stmt = db.prepare(`
+      SELECT * FROM election_positions 
+      WHERE election_id = ? 
+      ORDER BY order_index
+    `);
+    const rows = stmt.all(electionId) as any[];
+    return rows.map(row => ({
+      id: row.id,
+      electionId: row.election_id,
+      positionId: row.position_id,
+      orderIndex: row.order_index,
+      status: row.status,
+      currentScrutiny: row.current_scrutiny,
+      openedAt: row.opened_at,
+      closedAt: row.closed_at,
+      createdAt: row.created_at,
+    }));
+  }
+
+  getActiveElectionPosition(electionId: number): ElectionPosition | null {
+    const stmt = db.prepare(`
+      SELECT * FROM election_positions 
+      WHERE election_id = ? AND status = 'active'
+      ORDER BY order_index
+      LIMIT 1
+    `);
+    const row = stmt.get(electionId) as any;
+    if (!row) return null;
+    
+    return {
+      id: row.id,
+      electionId: row.election_id,
+      positionId: row.position_id,
+      orderIndex: row.order_index,
+      status: row.status,
+      currentScrutiny: row.current_scrutiny,
+      openedAt: row.opened_at,
+      closedAt: row.closed_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  advancePositionScrutiny(electionPositionId: number): void {
+    db.prepare(`
+      UPDATE election_positions 
+      SET current_scrutiny = current_scrutiny + 1 
+      WHERE id = ? AND current_scrutiny < 3
+    `).run(electionPositionId);
+  }
+
+  openNextPosition(electionId: number): ElectionPosition | null {
+    // Get the current active position
+    const currentActive = this.getActiveElectionPosition(electionId);
+    
+    if (!currentActive) {
+      // If no active position, open the first pending one
+      const nextStmt = db.prepare(`
+        SELECT * FROM election_positions 
+        WHERE election_id = ? AND status = 'pending'
+        ORDER BY order_index
+        LIMIT 1
+      `);
+      const nextRow = nextStmt.get(electionId) as any;
+      
+      if (nextRow) {
+        db.prepare(`
+          UPDATE election_positions 
+          SET status = 'active', opened_at = datetime('now')
+          WHERE id = ?
+        `).run(nextRow.id);
+        
+        return this.getActiveElectionPosition(electionId);
+      }
+      
+      return null;
+    }
+    
+    // Complete current position and open next one
+    db.prepare(`
+      UPDATE election_positions 
+      SET status = 'completed', closed_at = datetime('now')
+      WHERE id = ?
+    `).run(currentActive.id);
+    
+    // Find and open next position
+    const nextStmt = db.prepare(`
+      SELECT * FROM election_positions 
+      WHERE election_id = ? AND order_index > ? AND status = 'pending'
+      ORDER BY order_index
+      LIMIT 1
+    `);
+    const nextRow = nextStmt.get(electionId, currentActive.orderIndex) as any;
+    
+    if (nextRow) {
+      db.prepare(`
+        UPDATE election_positions 
+        SET status = 'active', opened_at = datetime('now')
+        WHERE id = ?
+      `).run(nextRow.id);
+      
+      return this.getActiveElectionPosition(electionId);
+    }
+    
+    return null;
+  }
+
+  completePosition(electionPositionId: number): void {
+    db.prepare(`
+      UPDATE election_positions 
+      SET status = 'completed', closed_at = datetime('now')
+      WHERE id = ?
+    `).run(electionPositionId);
+  }
+
+  // Election Attendance management
+  getElectionAttendance(electionId: number): ElectionAttendance[] {
+    const stmt = db.prepare(`
+      SELECT * FROM election_attendance 
+      WHERE election_id = ?
+      ORDER BY member_id
+    `);
+    const rows = stmt.all(electionId) as any[];
+    return rows.map(row => ({
+      id: row.id,
+      electionId: row.election_id,
+      memberId: row.member_id,
+      isPresent: Boolean(row.is_present),
+      markedAt: row.marked_at,
+      createdAt: row.created_at,
+    }));
+  }
+
+  getPresentCount(electionId: number): number {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM election_attendance 
+      WHERE election_id = ? AND is_present = 1
+    `);
+    const result = stmt.get(electionId) as { count: number };
+    return result.count;
+  }
+
+  setMemberAttendance(electionId: number, memberId: number, isPresent: boolean): void {
+    const checkStmt = db.prepare(`
+      SELECT id FROM election_attendance 
+      WHERE election_id = ? AND member_id = ?
+    `);
+    const existing = checkStmt.get(electionId, memberId) as any;
+    
+    if (existing) {
+      db.prepare(`
+        UPDATE election_attendance 
+        SET is_present = ?, marked_at = datetime('now')
+        WHERE id = ?
+      `).run(isPresent ? 1 : 0, existing.id);
+    } else {
+      db.prepare(`
+        INSERT INTO election_attendance (election_id, member_id, is_present, marked_at)
+        VALUES (?, ?, ?, datetime('now'))
+      `).run(electionId, memberId, isPresent ? 1 : 0);
+    }
+  }
+
+  initializeAttendance(electionId: number): void {
+    // Create attendance records for all members
+    const members = this.getAllMembers();
+    
+    for (const member of members) {
+      // Check if attendance already exists
+      const checkStmt = db.prepare(`
+        SELECT id FROM election_attendance 
+        WHERE election_id = ? AND member_id = ?
+      `);
+      const existing = checkStmt.get(electionId, member.id) as any;
+      
+      if (!existing) {
+        db.prepare(`
+          INSERT INTO election_attendance (election_id, member_id, is_present)
+          VALUES (?, ?, 0)
+        `).run(electionId, member.id);
+      }
     }
   }
 
@@ -315,17 +526,32 @@ export class SQLiteStorage implements IStorage {
     const election = this.getElectionById(electionId);
     if (!election) return null;
 
-    const positions = this.getAllPositions();
-    const currentScrutiny = election.currentScrutiny;
+    // Get all election positions for this election
+    const electionPositions = this.getElectionPositions(electionId);
+    
+    // Get present count
+    const presentCount = this.getPresentCount(electionId);
     
     const results: ElectionResults = {
       electionId: election.id,
       electionName: election.name,
-      currentScrutiny,
+      presentCount,
       positions: [],
     };
 
-    for (const position of positions) {
+    for (const electionPosition of electionPositions) {
+      // Get position details
+      const positionStmt = db.prepare("SELECT * FROM positions WHERE id = ?");
+      const positionRow = positionStmt.get(electionPosition.positionId) as any;
+      if (!positionRow) continue;
+      
+      const position = {
+        id: positionRow.id,
+        name: positionRow.name,
+      };
+      
+      const currentScrutiny = electionPosition.currentScrutiny;
+      
       // Get candidates for this position
       let candidates = this.getCandidatesByPosition(position.id, electionId);
       
@@ -335,7 +561,18 @@ export class SQLiteStorage implements IStorage {
       );
       const totalVotersResult = totalVotersStmt.get(position.id, electionId, currentScrutiny) as { count: number };
       const totalVoters = totalVotersResult.count;
-      const majorityThreshold = Math.floor(totalVoters / 2) + 1;
+      
+      // Calculate majority threshold based on present members
+      // For scrutiny 1 and 2: half + 1
+      // For scrutiny 3: simple majority (whoever has more votes wins)
+      let majorityThreshold: number;
+      if (currentScrutiny === 3) {
+        // Scrutiny 3: simple majority (just need most votes)
+        majorityThreshold = 1;
+      } else {
+        // Scrutiny 1 and 2: half + 1 of present members
+        majorityThreshold = Math.floor(presentCount / 2) + 1;
+      }
       
       // Get vote counts for each candidate in current scrutiny
       const candidateResults = candidates.map((candidate) => {
@@ -370,23 +607,23 @@ export class SQLiteStorage implements IStorage {
       if (winnerRow) {
         winnerId = winnerRow.candidate_id;
         winnerScrutiny = winnerRow.won_at_scrutiny;
-      } else if (candidateResults.length > 0 && candidateResults[0].voteCount >= majorityThreshold) {
-        // Someone reached majority in current scrutiny
+      } else if (currentScrutiny < 3 && candidateResults.length > 0 && candidateResults[0].voteCount >= majorityThreshold) {
+        // Scrutiny 1 or 2: Someone reached half+1 of present members
         winnerId = candidateResults[0].candidateId;
         winnerScrutiny = currentScrutiny;
-      } else if (currentScrutiny < 3) {
-        // No winner yet, need next scrutiny
-        needsNextScrutiny = true;
       } else if (currentScrutiny === 3) {
-        // Third scrutiny - either top candidate wins or tie needs admin resolution
+        // Third scrutiny - simple majority (most votes wins)
         if (candidateResults.length > 1 && candidateResults[0].voteCount === candidateResults[1].voteCount) {
           // Tie - admin must choose
           needsNextScrutiny = false; // Can't advance further
-        } else if (candidateResults.length > 0) {
-          // Top candidate wins even without majority
+        } else if (candidateResults.length > 0 && candidateResults[0].voteCount > 0) {
+          // Top candidate wins with simple majority
           winnerId = candidateResults[0].candidateId;
           winnerScrutiny = 3;
         }
+      } else if (currentScrutiny < 3 && electionPosition.status === 'active') {
+        // No winner yet, need next scrutiny
+        needsNextScrutiny = true;
       }
 
       // Mark elected candidate
@@ -398,13 +635,12 @@ export class SQLiteStorage implements IStorage {
         }
       }
 
-      // For 3rd scrutiny, only show top 2 candidates if we're in 3rd scrutiny
-      // Actually, we need to show all candidates but filter who can be voted for
-      // The filtering will happen in the frontend/voting logic
-
       results.positions.push({
         positionId: position.id,
         positionName: position.name,
+        status: electionPosition.status,
+        currentScrutiny,
+        orderIndex: electionPosition.orderIndex,
         totalVoters,
         majorityThreshold,
         needsNextScrutiny,
