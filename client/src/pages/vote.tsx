@@ -83,10 +83,10 @@ export default function VotePage() {
     return (
       <div className="min-h-screen bg-background">
         <div className="h-2 bg-primary w-full" />
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold">Votação</h1>
-            <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+        <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold">Votação</h1>
+            <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
               <LogOut className="w-4 h-4 mr-2" />
               Sair
             </Button>
@@ -108,48 +108,51 @@ export default function VotePage() {
     <div className="min-h-screen bg-background">
       <div className="h-2 bg-primary w-full" />
       
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <div className="flex items-center justify-between mb-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Votação</h1>
-            <p className="text-muted-foreground mt-1">
-              {activeElection.name} - Escolha seu candidato para cada cargo
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Votação</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+              {activeElection.name}
+            </p>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Escolha seu candidato para cada cargo
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+          <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
             <LogOut className="w-4 h-4 mr-2" />
             Sair
           </Button>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {positions.map((position) => {
             const candidates = getCandidatesByPosition(position.id);
             const hasVoted = votedPositions.has(position.id);
 
             return (
               <Card key={position.id} className="border-border">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">{position.name}</CardTitle>
+                <CardHeader className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-lg sm:text-xl">{position.name}</CardTitle>
                     {hasVoted && (
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                        <CheckCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">Votado</span>
+                      <div className="flex items-center gap-1 sm:gap-2 text-green-600 dark:text-green-400">
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-xs sm:text-sm font-medium">Votado</span>
                       </div>
                     )}
                   </div>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     {candidates.length} candidatos disponíveis
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6">
                   {candidates.length === 0 ? (
                     <p className="text-center py-6 text-muted-foreground text-sm">
                       Nenhum candidato registrado para este cargo
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       {candidates.map((candidate) => (
                         <Card 
                           key={candidate.id} 
