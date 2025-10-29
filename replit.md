@@ -35,6 +35,11 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Integrated Resend for automatic email delivery** - verification codes sent via email
 - ✅ **Candidate selection from registered members** - admin selects members from dropdown instead of manual entry
 - ✅ **Mobile optimization complete** - all pages now fully responsive with mobile-first design
+- ✅ **Three-round scrutiny voting system** - candidates need half+1 votes to win, automatic progression through rounds
+- ✅ **Gravatar integration** - candidate photos fetched from Gravatar using MD5 hash of email addresses
+- ✅ **Per-position tie resolution** - admin can resolve ties independently for each position on third round
+- ✅ **Admin candidate validation** - admins are prevented from being candidates
+- ✅ **Election winners table** - separate table tracks winners per position for independent tie resolution
 
 ## System Architecture
 
@@ -104,18 +109,22 @@ Preferred communication style: Simple, everyday language.
 - Foreign key constraints enforced at database level
 
 **Database Schema**
-Six main tables with relational integrity:
-1. **users** - Authentication and role management
+Seven main tables with relational integrity:
+1. **users** - Authentication and role management (with Gravatar photo support via email MD5 hash)
 2. **positions** - Fixed leadership positions (Presidente, Vice-Presidente, 1º Secretário, 2º Secretário, Tesoureiro)
-3. **elections** - Election instances with active/closed states
-4. **candidates** - Links candidates to positions and elections
-5. **votes** - Records votes with voter, candidate, position, and election tracking
+3. **elections** - Election instances with active/closed states and current scrutiny round (1-3)
+4. **candidates** - Links candidates to positions and elections (admins cannot be candidates)
+5. **votes** - Records votes with voter, candidate, position, election, and scrutiny round tracking
 6. **verification_codes** - Temporary email verification codes (15-minute expiry)
+7. **election_winners** - Tracks winners per position (electionId + positionId + candidateId + wonAtScrutiny)
 
 **Business Logic Constraints**
 - One active election at a time
-- One vote per user per position per election
-- Users cannot vote multiple times for the same position
+- One vote per user per position per election per scrutiny round
+- Three-round scrutiny system: candidates need half+1 votes to win
+- Third round limited to top 2 candidates per position
+- Admin can manually resolve ties on third round independently for each position
+- Admins cannot be registered as candidates
 
 ### External Dependencies
 
