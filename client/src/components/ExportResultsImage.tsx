@@ -1,4 +1,4 @@
-import { useRef, forwardRef, useImperativeHandle } from "react";
+import { useRef, forwardRef, useImperativeHandle, useState } from "react";
 import html2canvas from "html2canvas";
 import logoUrl from "@assets/EMAÚS_20251029_101216_0000_1761743724321.png";
 
@@ -11,9 +11,12 @@ interface Winner {
   wonAtScrutiny: number;
 }
 
+export type AspectRatio = "9:16" | "5:4";
+
 interface ExportResultsImageProps {
   electionTitle: string;
   winners: Winner[];
+  aspectRatio: AspectRatio;
 }
 
 export interface ExportResultsImageHandle {
@@ -21,8 +24,13 @@ export interface ExportResultsImageHandle {
 }
 
 const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsImageProps>(
-  ({ electionTitle, winners }, ref) => {
+  ({ electionTitle, winners, aspectRatio }, ref) => {
     const imageRef = useRef<HTMLDivElement>(null);
+
+    // Calculate dimensions based on aspect ratio
+    const dimensions = aspectRatio === "9:16" 
+      ? { width: 1080, height: 1920 }  // Stories/Vertical
+      : { width: 1080, height: 864 };  // Feed/Square-ish
 
     const positionOrder = [
       "Presidente",
@@ -52,8 +60,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundColor: "#ffffff",
             scale: 2,
             logging: false,
-            width: 1080,
-            height: 1350,
+            width: dimensions.width,
+            height: dimensions.height,
           });
 
           canvas.toBlob((blob) => {
@@ -79,10 +87,10 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         <div
           ref={imageRef}
           style={{
-            width: "1080px",
-            height: "1350px",
+            width: `${dimensions.width}px`,
+            height: `${dimensions.height}px`,
             backgroundColor: "#ffffff",
-            padding: "60px 50px",
+            padding: "60px 50px 40px 50px",
             fontFamily: "system-ui, -apple-system, sans-serif",
             display: "flex",
             flexDirection: "column",
@@ -229,12 +237,18 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             </div>
 
             {/* Logo */}
-            <div style={{ textAlign: "center" }}>
+            <div style={{ 
+              textAlign: "center",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}>
               <img
                 src={logoUrl}
                 alt="UMP Emaús"
                 style={{
-                  height: "60px",
+                  height: "150px",
+                  maxWidth: "100%",
                   objectFit: "contain",
                 }}
               />

@@ -44,7 +44,10 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Election finalization** - Admin can finalize completed elections to archive them in history
 - ✅ **Election history** - New "Histórico" tab shows archived elections with navigation to results
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
-- ✅ **Share results button** - Export election results as image (1080x1350px) with winners, votes, UMP logo and scripture verse
+- ✅ **Share results button** - Export election results as image with winners, votes, UMP logo and scripture verse
+- ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 5:4 (Feed - 1080x864) aspect ratios
+- ✅ **Improved logo display** - Logo increased to 150px height, centered at bottom with proper padding to prevent cutoff
+- ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 
 ## System Architecture

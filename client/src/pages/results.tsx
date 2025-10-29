@@ -5,9 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ChartBar, LogOut, Trophy, ArrowLeft, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ElectionResults } from "@shared/schema";
-import ExportResultsImage, { type ExportResultsImageHandle } from "@/components/ExportResultsImage";
+import ExportResultsImage, { type ExportResultsImageHandle, type AspectRatio } from "@/components/ExportResultsImage";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Winner {
   positionId: number;
@@ -22,6 +30,7 @@ export default function ResultsPage() {
   const { user, logout, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const exportRef = useRef<ExportResultsImageHandle>(null);
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("9:16");
   
   // Get electionId from query string
   const searchParams = new URLSearchParams(window.location.search);
@@ -108,17 +117,48 @@ export default function ResultsPage() {
           </div>
           <div className="flex gap-2 self-end sm:self-auto">
             {!results?.isActive && winners && winners.length > 0 && user?.isAdmin && (
-              <Button 
-                variant="default" 
-                onClick={handleExportImage} 
-                data-testid="button-export-results" 
-                size="sm" 
-                className="sm:h-9"
-                aria-label="Compartilhar Resultados"
-              >
-                <Share2 className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Compartilhar</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="default" 
+                    data-testid="button-export-results" 
+                    size="sm" 
+                    className="sm:h-9"
+                    aria-label="Compartilhar Resultados"
+                  >
+                    <Share2 className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Compartilhar</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Escolha o formato</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setAspectRatio("9:16");
+                      setTimeout(() => handleExportImage(), 100);
+                    }}
+                    data-testid="menu-export-9-16"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">9:16 (Stories)</span>
+                      <span className="text-xs text-muted-foreground">Instagram/Facebook Stories</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setAspectRatio("5:4");
+                      setTimeout(() => handleExportImage(), 100);
+                    }}
+                    data-testid="menu-export-5-4"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">5:4 (Feed)</span>
+                      <span className="text-xs text-muted-foreground">Instagram/Facebook Feed</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             {isAuthenticated && (
               <Button 
@@ -279,6 +319,7 @@ export default function ResultsPage() {
           ref={exportRef}
           electionTitle={results?.electionName || ''}
           winners={winners}
+          aspectRatio={aspectRatio}
         />
       )}
     </div>
