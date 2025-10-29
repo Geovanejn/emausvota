@@ -48,19 +48,19 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
 - ✅ **Canva-inspired design (replicated exactly with pixel-perfect specs):**
   - Background: #F9F9F9 (light gray)
-  - Cards: #FFFFFF with 20px borderRadius, shadow 0 4px 8px rgba(0,0,0,0.08)
+  - Cards: #FFFFFF with 20px borderRadius, shadow 0 3px 6px rgba(0,0,0,0.1)
   - Yellow header: #FFD84B (integrated at top with borderRadius 20px 20px 0 0)
-  - Title: "ELEIÇÃO" bold + first year outline (WebkitTextStroke 3px)
-  - **Photo OVERLAPPING bottom-right corner** of card (position absolute)
+  - Title: "ELEIÇÃO" bold + first year outline (fontWeight 400, WebkitTextStroke 2px)
+  - **Photo OVERLAPPING bottom-right corner** of card (position absolute, bottom -30px)
   - 2x2 + 1 absolute positioned layout with exact Canva coordinates
   - Typography: Poppins (cards), Montserrat (title), Lato Italic (scripture)
   - Colors: #1C1C1C (name), #4A4A4A (votes), #3A3A3A (scripture), #F7B731 (fallback)
   - Watermark "ELEIÇÃO" rotated -12deg, opacity 0.015, color #F0F0F0
-- ✅ **Exact specifications per format:**
-  - **9:16 (Stories - 1080x1920):** Cards 440x160px, header 50px, photo 110px (offset 30px), title 150px, cargo 26px, name 22px, votes 18px, verse 22px, logo 90px
-  - **4:5 (Feed - 1080x1350):** Cards 420x150px, header 45px, photo 100px (offset 25px), title 130px, cargo 24px, name 20px, votes 16px, verse 20px, logo 80px
-  - **Absolute positioning:** Stories positions - Presidente (150,530), Vice (590,530), 1ºSec (150,760), 2ºSec (590,760), Tesoureiro (370,1010)
-  - **Absolute positioning:** Feed positions - Presidente (160,440), Vice (600,440), 1ºSec (160,660), 2ºSec (600,660), Tesoureiro (380,870)
+- ✅ **Exact specifications per format (corrected based on user analysis):**
+  - **9:16 (Stories - 1080x1920):** Cards 440x160px, header 50px, photo 110px, title 110px at y:230, letter spacing 20px, cargo 26px, name 22px, votes 18px, verse 22px at y:1620, logo 270px width at y:1750
+  - **4:5 (Feed - 1080x1350):** Cards 420x150px, header 45px, photo 100px, title 100px at y:160, letter spacing 15px, cargo 24px, name 20px, votes 16px, verse 20px at y:1170, logo 240px width at y:1240
+  - **Absolute positioning Stories (260px vertical spacing):** Presidente (150,530), Vice (590,530), 1ºSec (150,790), 2ºSec (590,790), Tesoureiro (370,1070)
+  - **Absolute positioning Feed:** Presidente (160,440), Vice (600,440), 1ºSec (160,660), 2ºSec (600,660), Tesoureiro (380,870)
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 

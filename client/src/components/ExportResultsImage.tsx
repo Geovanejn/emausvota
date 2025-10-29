@@ -87,39 +87,47 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
     const is916 = aspectRatio === "9:16";
 
-    // Exact specs from Canva
+    // Corrected specs based on user feedback analysis
     const specs = is916 ? {
       cardWidth: 440,
       cardHeight: 160,
       headerHeight: 50,
       photoSize: 110,
-      photoOffset: 30,
-      titleSize: 150,
+      photoOffsetRight: 30,
+      photoOffsetBottom: -30,
+      titleSize: 110,
+      titleY: 230,
+      letterSpacing: 20,
       cargoSize: 26,
       nameSize: 22,
       voteSize: 18,
       verseSize: 22,
+      logoWidth: 270,
       logoHeight: 90,
       positions: [
         { x: 150, y: 530 },   // Presidente
         { x: 590, y: 530 },   // Vice
-        { x: 150, y: 760 },   // 1º Sec
-        { x: 590, y: 760 },   // 2º Sec
-        { x: 370, y: 1010 },  // Tesoureiro
+        { x: 150, y: 790 },   // 1º Sec (was 760, now 790 for 260px spacing)
+        { x: 590, y: 790 },   // 2º Sec
+        { x: 370, y: 1070 },  // Tesoureiro (was 1010, now 1070)
       ],
-      verseY: 1650,
-      logoY: 1760,
+      verseY: 1620,
+      logoY: 1750,
     } : {
       cardWidth: 420,
       cardHeight: 150,
       headerHeight: 45,
       photoSize: 100,
-      photoOffset: 25,
-      titleSize: 130,
+      photoOffsetRight: 25,
+      photoOffsetBottom: -25,
+      titleSize: 100,
+      titleY: 160,
+      letterSpacing: 15,
       cargoSize: 24,
       nameSize: 20,
       voteSize: 16,
       verseSize: 20,
+      logoWidth: 240,
       logoHeight: 80,
       positions: [
         { x: 160, y: 440 },   // Presidente
@@ -148,7 +156,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundColor: "#FFFFFF",
             borderRadius: "20px",
             overflow: "visible",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.08)",
+            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.1)",
           }}
         >
           {/* Yellow header - integrated at top */}
@@ -182,7 +190,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           <div
             style={{
               flex: 1,
-              padding: "20px",
+              padding: "20px 20px 20px 20px",
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
@@ -217,8 +225,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           <div
             style={{
               position: "absolute",
-              right: `${specs.photoOffset}px`,
-              bottom: `-${specs.photoOffset}px`,
+              right: `${specs.photoOffsetRight}px`,
+              bottom: `${specs.photoOffsetBottom}px`,
               width: `${specs.photoSize}px`,
               height: `${specs.photoSize}px`,
               borderRadius: "50%",
@@ -304,7 +312,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           <div
             style={{
               position: "absolute",
-              top: is916 ? "260px" : "180px",
+              top: `${specs.titleY}px`,
               left: "540px",
               transform: "translateX(-50%)",
               textAlign: "center",
@@ -318,16 +326,16 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 color: "#000000",
                 margin: 0,
                 lineHeight: "1",
-                letterSpacing: "-2px",
+                letterSpacing: `${specs.letterSpacing}px`,
                 fontFamily: "'Montserrat', sans-serif",
               }}
             >
               <span style={{ fontWeight: "800" }}>ELEIÇÃO</span>{" "}
               <span
                 style={{
-                  fontWeight: "800",
+                  fontWeight: "400",
                   color: "transparent",
-                  WebkitTextStroke: "3px #000000",
+                  WebkitTextStroke: "2px #000000",
                 }}
               >
                 {year}
@@ -383,6 +391,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               src={logoUrl}
               alt="emaús"
               style={{
+                width: `${specs.logoWidth}px`,
                 height: `${specs.logoHeight}px`,
                 objectFit: "contain",
               }}
