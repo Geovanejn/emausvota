@@ -39,9 +39,19 @@ export function initializeDatabase() {
       name TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
       current_scrutiny INTEGER NOT NULL DEFAULT 1,
-      winner_candidate_id INTEGER,
-      winner_scrutiny INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS election_winners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      election_id INTEGER NOT NULL,
+      position_id INTEGER NOT NULL,
+      candidate_id INTEGER NOT NULL,
+      won_at_scrutiny INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (election_id) REFERENCES elections(id),
+      FOREIGN KEY (position_id) REFERENCES positions(id),
+      FOREIGN KEY (candidate_id) REFERENCES candidates(id)
     );
 
     CREATE TABLE IF NOT EXISTS candidates (
@@ -90,13 +100,36 @@ export function initializeDatabase() {
       sqlite.exec("ALTER TABLE elections ADD COLUMN current_scrutiny INTEGER NOT NULL DEFAULT 1");
       console.log("Added current_scrutiny column to elections table");
     }
-    if (!electionsColumnNames.includes('winner_candidate_id')) {
-      sqlite.exec("ALTER TABLE elections ADD COLUMN winner_candidate_id INTEGER");
-      console.log("Added winner_candidate_id column to elections table");
-    }
-    if (!electionsColumnNames.includes('winner_scrutiny')) {
-      sqlite.exec("ALTER TABLE elections ADD COLUMN winner_scrutiny INTEGER");
-      console.log("Added winner_scrutiny column to elections table");
+    
+    // Remove old columns if they exist (we now use election_winners table)
+    if (electionsColumnNames.includes('winner_candidate_id') || electionsColumnNames.includes('winner_scrutiny')) {
+      console.log("Migrating from old winner columns to election_winners table...");
+      // SQLite doesn't support DROP COLUMN, so we need to recreate the table
+      // First, drop the temp table if it exists from a previous failed migration
+      sqlite.exec("DROP TABLE IF EXISTS elections_new");
+      
+      // Temporarily disable foreign keys for migration
+      sqlite.exec("PRAGMA foreign_keys = OFF");
+      
+      sqlite.exec(`
+        CREATE TABLE elections_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          current_scrutiny INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        
+        INSERT INTO elections_new (id, name, is_active, current_scrutiny, created_at)
+        SELECT id, name, is_active, current_scrutiny, created_at FROM elections;
+        
+        DROP TABLE elections;
+        ALTER TABLE elections_new RENAME TO elections;
+      `);
+      
+      // Re-enable foreign keys
+      sqlite.exec("PRAGMA foreign_keys = ON");
+      console.log("Elections table migrated successfully");
     }
 
     // Check and add columns to candidates table

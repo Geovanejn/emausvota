@@ -495,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vencedor só pode ser escolhido no 3º escrutínio" });
       }
 
-      storage.setWinner(electionId, candidateId, 3);
+      storage.setWinner(electionId, candidateId, positionId, 3);
       res.json({ message: "Vencedor definido com sucesso" });
     } catch (error) {
       console.error("Set winner error:", error);

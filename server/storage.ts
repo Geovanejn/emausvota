@@ -39,7 +39,7 @@ export interface IStorage {
   createElection(name: string): Election;
   closeElection(id: number): void;
   advanceScrutiny(electionId: number): void;
-  setWinner(electionId: number, candidateId: number, scrutiny: number): void;
+  setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void;
   
   getAllCandidates(): Candidate[];
   getCandidatesByElection(electionId: number): CandidateWithDetails[];
@@ -147,8 +147,6 @@ export class SQLiteStorage implements IStorage {
       name: row.name,
       isActive: Boolean(row.is_active),
       currentScrutiny: row.current_scrutiny,
-      winnerCandidateId: row.winner_candidate_id,
-      winnerScrutiny: row.winner_scrutiny,
       createdAt: row.created_at,
     };
   }
@@ -163,8 +161,6 @@ export class SQLiteStorage implements IStorage {
       name: row.name,
       isActive: Boolean(row.is_active),
       currentScrutiny: row.current_scrutiny,
-      winnerCandidateId: row.winner_candidate_id,
-      winnerScrutiny: row.winner_scrutiny,
       createdAt: row.created_at,
     };
   }
@@ -195,9 +191,18 @@ export class SQLiteStorage implements IStorage {
     stmt.run(electionId);
   }
 
-  setWinner(electionId: number, candidateId: number, scrutiny: number): void {
-    const stmt = db.prepare("UPDATE elections SET winner_candidate_id = ?, winner_scrutiny = ? WHERE id = ?");
-    stmt.run(candidateId, scrutiny, electionId);
+  setWinner(electionId: number, candidateId: number, positionId: number, scrutiny: number): void {
+    // Insert or update winner for this position
+    const checkStmt = db.prepare("SELECT id FROM election_winners WHERE election_id = ? AND position_id = ?");
+    const existing = checkStmt.get(electionId, positionId) as any;
+    
+    if (existing) {
+      const updateStmt = db.prepare("UPDATE election_winners SET candidate_id = ?, won_at_scrutiny = ? WHERE election_id = ? AND position_id = ?");
+      updateStmt.run(candidateId, scrutiny, electionId, positionId);
+    } else {
+      const insertStmt = db.prepare("INSERT INTO election_winners (election_id, position_id, candidate_id, won_at_scrutiny) VALUES (?, ?, ?, ?)");
+      insertStmt.run(electionId, positionId, candidateId, scrutiny);
+    }
   }
 
   getAllCandidates(): Candidate[] {
@@ -358,10 +363,13 @@ export class SQLiteStorage implements IStorage {
       let winnerScrutiny: number | undefined;
       let needsNextScrutiny = false;
 
-      // Check if there's a winner from previous scrutinies or current
-      if (election.winnerCandidateId) {
-        winnerId = election.winnerCandidateId;
-        winnerScrutiny = election.winnerScrutiny || currentScrutiny;
+      // Check if there's a winner override from admin (from election_winners table)
+      const winnerStmt = db.prepare("SELECT candidate_id, won_at_scrutiny FROM election_winners WHERE election_id = ? AND position_id = ?");
+      const winnerRow = winnerStmt.get(electionId, position.id) as any;
+      
+      if (winnerRow) {
+        winnerId = winnerRow.candidate_id;
+        winnerScrutiny = winnerRow.won_at_scrutiny;
       } else if (candidateResults.length > 0 && candidateResults[0].voteCount >= majorityThreshold) {
         // Someone reached majority in current scrutiny
         winnerId = candidateResults[0].candidateId;

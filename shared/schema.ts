@@ -49,8 +49,16 @@ export const elections = sqliteTable("elections", {
   name: text("name").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   currentScrutiny: integer("current_scrutiny").notNull().default(1), // 1, 2, or 3
-  winnerCandidateId: integer("winner_candidate_id"), // Set by admin in case of tie in 3rd scrutiny
-  winnerScrutiny: integer("winner_scrutiny"), // Which scrutiny elected the winner (1, 2, or 3)
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+// Election Winners table - tracks which candidate won each position (for tie resolution in 3rd scrutiny)
+export const electionWinners = sqliteTable("election_winners", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  electionId: integer("election_id").notNull().references(() => elections.id),
+  positionId: integer("position_id").notNull().references(() => positions.id),
+  candidateId: integer("candidate_id").notNull().references(() => candidates.id),
+  wonAtScrutiny: integer("won_at_scrutiny").notNull(), // Which scrutiny this winner was chosen (1, 2, or 3)
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -62,6 +70,14 @@ export const insertElectionSchema = createInsertSchema(elections).omit({
 
 export type InsertElection = z.infer<typeof insertElectionSchema>;
 export type Election = typeof elections.$inferSelect;
+
+export const insertElectionWinnerSchema = createInsertSchema(electionWinners).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertElectionWinner = z.infer<typeof insertElectionWinnerSchema>;
+export type ElectionWinner = typeof electionWinners.$inferSelect;
 
 // Candidates table
 export const candidates = sqliteTable("candidates", {

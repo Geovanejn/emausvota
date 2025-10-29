@@ -27,10 +27,12 @@ import {
   PlusCircle, 
   ChartBar, 
   LogOut, 
-  Users 
+  Users,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
 import { useLocation } from "wouter";
-import type { Election, Position, CandidateWithDetails } from "@shared/schema";
+import type { Election, Position, CandidateWithDetails, ElectionResults } from "@shared/schema";
 
 export default function AdminPage() {
   const { user, logout } = useAuth();
@@ -68,6 +70,12 @@ export default function AdminPage() {
   const { data: nonAdminMembers = [] } = useQuery<Array<{ id: number; fullName: string; email: string }>>({
     queryKey: ["/api/members/non-admins"],
     enabled: isAddCandidateOpen, // Only fetch when dialog is open
+  });
+
+  // Election results for scrutiny management
+  const { data: results } = useQuery<ElectionResults | null>({
+    queryKey: ["/api/results/latest"],
+    enabled: !!activeElection,
   });
 
   const createElectionMutation = useMutation({
@@ -171,6 +179,50 @@ export default function AdminPage() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao remover membro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const advanceScrutinyMutation = useMutation({
+    mutationFn: async (electionId: number) => {
+      return await apiRequest("PATCH", `/api/elections/${electionId}/advance-scrutiny`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Escrutínio avançado!",
+        description: "A votação passou para o próximo escrutínio",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao avançar escrutínio",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setWinnerMutation = useMutation({
+    mutationFn: async (data: { electionId: number; candidateId: number; positionId: number }) => {
+      return await apiRequest("PATCH", `/api/elections/${data.electionId}/set-winner`, {
+        candidateId: data.candidateId,
+        positionId: data.positionId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Vencedor definido!",
+        description: "O vencedor foi escolhido com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao definir vencedor",
         description: error.message,
         variant: "destructive",
       });
@@ -353,6 +405,124 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {activeElection && results && (
+              <Card className="border-blue-500">
+                <CardHeader>
+                  <CardTitle className="text-xl">Gerenciamento de Escrutínios</CardTitle>
+                  <CardDescription>
+                    Controle o processo de votação por escrutínios
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        Escrutínio Atual: {activeElection.currentScrutiny}º
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                        {activeElection.currentScrutiny === 3 
+                          ? "Último escrutínio - escolha vencedores em caso de empate"
+                          : "Avance para o próximo escrutínio quando necessário"}
+                      </p>
+                    </div>
+
+                    {/* Show positions needing next scrutiny */}
+                    {results.positions.some(p => p.needsNextScrutiny) && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">Cargos que precisam de novo escrutínio:</p>
+                        {results.positions
+                          .filter(p => p.needsNextScrutiny)
+                          .map(position => (
+                            <div 
+                              key={position.positionId}
+                              className="p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg"
+                            >
+                              <p className="font-medium text-amber-900 dark:text-amber-100">
+                                {position.positionName}
+                              </p>
+                              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                Nenhum candidato atingiu metade+1 dos votos
+                              </p>
+                            </div>
+                          ))}
+                        
+                        {activeElection.currentScrutiny < 3 && (
+                          <Button
+                            className="w-full"
+                            onClick={() => advanceScrutinyMutation.mutate(activeElection.id)}
+                            disabled={advanceScrutinyMutation.isPending}
+                            data-testid="button-advance-scrutiny"
+                          >
+                            <ArrowRight className="w-4 h-4 mr-2" />
+                            {advanceScrutinyMutation.isPending ? "Avançando..." : `Avançar para ${activeElection.currentScrutiny + 1}º Escrutínio`}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Show tied positions in 3rd scrutiny */}
+                    {activeElection.currentScrutiny === 3 && results.positions.some(p => p.isTied) && (
+                      <div className="space-y-3">
+                        <p className="text-sm font-medium">Cargos com empate - escolha o vencedor:</p>
+                        {results.positions
+                          .filter(p => p.isTied)
+                          .map(position => {
+                            const topCandidates = position.candidates
+                              .sort((a, b) => b.voteCount - a.voteCount)
+                              .slice(0, 2);
+                            
+                            return (
+                              <div 
+                                key={position.positionId}
+                                className="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 rounded-lg"
+                              >
+                                <p className="font-medium text-red-900 dark:text-red-100 mb-3">
+                                  {position.positionName}
+                                </p>
+                                <div className="space-y-2">
+                                  {topCandidates.map(candidate => (
+                                    <Button
+                                      key={candidate.candidateId}
+                                      variant="outline"
+                                      className="w-full justify-between"
+                                      onClick={() => setWinnerMutation.mutate({
+                                        electionId: activeElection.id,
+                                        candidateId: candidate.candidateId,
+                                        positionId: position.positionId,
+                                      })}
+                                      disabled={setWinnerMutation.isPending}
+                                      data-testid={`button-set-winner-${candidate.candidateId}`}
+                                    >
+                                      <span>{candidate.candidateName}</span>
+                                      <span className="text-xs text-muted-foreground">{candidate.voteCount} votos</span>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+
+                    {/* Show success message if all positions are decided */}
+                    {!results.positions.some(p => p.needsNextScrutiny || p.isTied) && (
+                      <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                            Todos os cargos foram decididos!
+                          </p>
+                        </div>
+                        <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                          Você pode encerrar a eleição quando estiver pronto.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {activeElection && (
               <Card>
