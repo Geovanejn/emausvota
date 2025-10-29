@@ -2,6 +2,16 @@ import { sql } from "drizzle-orm";
 import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import crypto from "crypto";
+
+// Utility function to generate Gravatar URL from email
+export function getGravatarUrl(email: string): string {
+  const hash = crypto
+    .createHash("md5")
+    .update(email.toLowerCase().trim())
+    .digest("hex");
+  return `https://www.gravatar.com/avatar/${hash}?d=mp&s=200`;
+}
 
 // Users table
 export const users = sqliteTable("users", {
@@ -38,6 +48,9 @@ export const elections = sqliteTable("elections", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  currentScrutiny: integer("current_scrutiny").notNull().default(1), // 1, 2, or 3
+  winnerCandidateId: integer("winner_candidate_id"), // Set by admin in case of tie in 3rd scrutiny
+  winnerScrutiny: integer("winner_scrutiny"), // Which scrutiny elected the winner (1, 2, or 3)
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -54,6 +67,8 @@ export type Election = typeof elections.$inferSelect;
 export const candidates = sqliteTable("candidates", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  email: text("email").notNull(), // Email to fetch Gravatar photo
+  userId: integer("user_id").notNull().references(() => users.id), // Reference to user
   positionId: integer("position_id").notNull().references(() => positions.id),
   electionId: integer("election_id").notNull().references(() => elections.id),
 });
@@ -72,6 +87,7 @@ export const votes = sqliteTable("votes", {
   candidateId: integer("candidate_id").notNull().references(() => candidates.id),
   positionId: integer("position_id").notNull().references(() => positions.id),
   electionId: integer("election_id").notNull().references(() => elections.id),
+  scrutinyRound: integer("scrutiny_round").notNull().default(1), // 1, 2, or 3
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -144,6 +160,7 @@ export type CandidateWithDetails = Candidate & {
   positionName: string;
   electionName: string;
   voteCount?: number;
+  photoUrl?: string;
 };
 
 export type PositionWithCandidates = Position & {
@@ -153,13 +170,23 @@ export type PositionWithCandidates = Position & {
 export type ElectionResults = {
   electionId: number;
   electionName: string;
+  currentScrutiny: number;
   positions: Array<{
     positionId: number;
     positionName: string;
+    totalVoters: number; // Total number of voters in this scrutiny
+    majorityThreshold: number; // Half + 1
+    needsNextScrutiny: boolean; // If no candidate reached majority
+    winnerId?: number; // ID of elected candidate (if any)
+    winnerScrutiny?: number; // Which scrutiny elected the winner
     candidates: Array<{
       candidateId: number;
       candidateName: string;
+      candidateEmail: string;
+      photoUrl: string;
       voteCount: number;
+      isElected: boolean;
+      electedInScrutiny?: number; // 1, 2, or 3
     }>;
   }>;
 };

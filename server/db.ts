@@ -38,16 +38,22 @@ export function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       is_active INTEGER NOT NULL DEFAULT 1,
+      current_scrutiny INTEGER NOT NULL DEFAULT 1,
+      winner_candidate_id INTEGER,
+      winner_scrutiny INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS candidates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      email TEXT NOT NULL DEFAULT '',
+      user_id INTEGER NOT NULL DEFAULT 0,
       position_id INTEGER NOT NULL,
       election_id INTEGER NOT NULL,
       FOREIGN KEY (position_id) REFERENCES positions(id),
-      FOREIGN KEY (election_id) REFERENCES elections(id)
+      FOREIGN KEY (election_id) REFERENCES elections(id),
+      FOREIGN KEY (user_id) REFERENCES users(id)
     );
 
     CREATE TABLE IF NOT EXISTS votes (
@@ -56,8 +62,9 @@ export function initializeDatabase() {
       candidate_id INTEGER NOT NULL,
       position_id INTEGER NOT NULL,
       election_id INTEGER NOT NULL,
+      scrutiny_round INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(voter_id, position_id, election_id),
+      UNIQUE(voter_id, position_id, election_id, scrutiny_round),
       FOREIGN KEY (voter_id) REFERENCES users(id),
       FOREIGN KEY (candidate_id) REFERENCES candidates(id),
       FOREIGN KEY (position_id) REFERENCES positions(id),
@@ -72,6 +79,76 @@ export function initializeDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration: Add new columns if they don't exist
+  try {
+    // Check and add columns to elections table
+    const electionsColumns = sqlite.prepare("PRAGMA table_info(elections)").all() as Array<{ name: string }>;
+    const electionsColumnNames = electionsColumns.map(col => col.name);
+    
+    if (!electionsColumnNames.includes('current_scrutiny')) {
+      sqlite.exec("ALTER TABLE elections ADD COLUMN current_scrutiny INTEGER NOT NULL DEFAULT 1");
+      console.log("Added current_scrutiny column to elections table");
+    }
+    if (!electionsColumnNames.includes('winner_candidate_id')) {
+      sqlite.exec("ALTER TABLE elections ADD COLUMN winner_candidate_id INTEGER");
+      console.log("Added winner_candidate_id column to elections table");
+    }
+    if (!electionsColumnNames.includes('winner_scrutiny')) {
+      sqlite.exec("ALTER TABLE elections ADD COLUMN winner_scrutiny INTEGER");
+      console.log("Added winner_scrutiny column to elections table");
+    }
+
+    // Check and add columns to candidates table
+    const candidatesColumns = sqlite.prepare("PRAGMA table_info(candidates)").all() as Array<{ name: string }>;
+    const candidatesColumnNames = candidatesColumns.map(col => col.name);
+    
+    if (!candidatesColumnNames.includes('email')) {
+      sqlite.exec("ALTER TABLE candidates ADD COLUMN email TEXT NOT NULL DEFAULT ''");
+      console.log("Added email column to candidates table");
+    }
+    if (!candidatesColumnNames.includes('user_id')) {
+      sqlite.exec("ALTER TABLE candidates ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0");
+      console.log("Added user_id column to candidates table");
+    }
+
+    // Check and add columns to votes table
+    const votesColumns = sqlite.prepare("PRAGMA table_info(votes)").all() as Array<{ name: string }>;
+    const votesColumnNames = votesColumns.map(col => col.name);
+    
+    if (!votesColumnNames.includes('scrutiny_round')) {
+      sqlite.exec("ALTER TABLE votes ADD COLUMN scrutiny_round INTEGER NOT NULL DEFAULT 1");
+      console.log("Added scrutiny_round column to votes table");
+      
+      // Need to recreate UNIQUE constraint to include scrutiny_round
+      // SQLite doesn't support dropping constraints, so we need to recreate the table
+      sqlite.exec(`
+        CREATE TABLE votes_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          voter_id INTEGER NOT NULL,
+          candidate_id INTEGER NOT NULL,
+          position_id INTEGER NOT NULL,
+          election_id INTEGER NOT NULL,
+          scrutiny_round INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(voter_id, position_id, election_id, scrutiny_round),
+          FOREIGN KEY (voter_id) REFERENCES users(id),
+          FOREIGN KEY (candidate_id) REFERENCES candidates(id),
+          FOREIGN KEY (position_id) REFERENCES positions(id),
+          FOREIGN KEY (election_id) REFERENCES elections(id)
+        );
+        
+        INSERT INTO votes_new (id, voter_id, candidate_id, position_id, election_id, scrutiny_round, created_at)
+        SELECT id, voter_id, candidate_id, position_id, election_id, scrutiny_round, created_at FROM votes;
+        
+        DROP TABLE votes;
+        ALTER TABLE votes_new RENAME TO votes;
+      `);
+      console.log("Recreated votes table with new UNIQUE constraint");
+    }
+  } catch (error) {
+    console.error("Migration error:", error);
+  }
 
   const fixedPositions = [
     "Presidente",
