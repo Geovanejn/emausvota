@@ -4,13 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "@/pages/login";
 import AdminPage from "@/pages/admin";
 import VotePage from "@/pages/vote";
 import ResultsPage from "@/pages/results";
 
-function HomePage() {
+function Router() {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
 
   if (isLoading) {
@@ -21,33 +20,37 @@ function HomePage() {
     );
   }
 
-  if (isAuthenticated) {
-    if (isAdmin) {
-      return <Redirect to="/admin" />;
-    }
-    return <Redirect to="/vote" />;
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/results" component={ResultsPage} />
+        <Route path="/" component={LoginPage} />
+        <Route>
+          <Redirect to="/" />
+        </Route>
+      </Switch>
+    );
   }
 
-  return <LoginPage />;
-}
+  if (isAdmin) {
+    return (
+      <Switch>
+        <Route path="/admin" component={AdminPage} />
+        <Route path="/vote" component={VotePage} />
+        <Route path="/results" component={ResultsPage} />
+        <Route>
+          <Redirect to="/admin" />
+        </Route>
+      </Switch>
+    );
+  }
 
-function Router() {
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/admin">
-        <ProtectedRoute requireAdmin>
-          <AdminPage />
-        </ProtectedRoute>
-      </Route>
-      <Route path="/vote">
-        <ProtectedRoute requireMember>
-          <VotePage />
-        </ProtectedRoute>
-      </Route>
+      <Route path="/vote" component={VotePage} />
       <Route path="/results" component={ResultsPage} />
       <Route>
-        <Redirect to="/" />
+        <Redirect to="/vote" />
       </Route>
     </Switch>
   );

@@ -8,6 +8,25 @@ Emaús Vota is a full-stack web application designed to manage elections for a c
 
 Preferred communication style: Simple, everyday language.
 
+## Project Status
+
+**✅ Fully implemented and tested**
+- Complete authentication system with JWT and bcrypt password hashing
+- Role-based access control (admin/member) with auth-gated routing
+- Election management (create, close elections)
+- Candidate registration system
+- Secure voting with duplicate prevention (one vote per position per election)
+- Real-time results display
+- Session persistence with automatic hydration
+- Responsive UI following civic tech design principles
+- All browser console errors resolved
+
+**Recent Changes (October 29, 2025)**
+- Fixed critical infinite loop issue by implementing separate route trees for different auth states
+- Removed dynamic redirects in favor of conditional route rendering
+- Cleaned up unused ProtectedRoute component
+- Verified all authentication flows work correctly with session persistence
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -15,8 +34,15 @@ Preferred communication style: Simple, everyday language.
 **Framework & Build Tools**
 - **React 18** with TypeScript for type-safe component development
 - **Vite** as the build tool and development server for fast HMR (Hot Module Replacement)
-- **Wouter** for lightweight client-side routing
+- **Wouter** for lightweight client-side routing with auth-gated route trees
 - **TanStack Query (React Query)** for server state management, caching, and data fetching
+
+**Routing Strategy**
+- Separate route trees based on authentication state to prevent redirect loops
+- Unauthenticated users: Access to "/" (login) and "/results" only
+- Admin users: Access to "/admin", "/vote", and "/results" (default redirect to /admin)
+- Member users: Access to "/vote" and "/results" (default redirect to /vote)
+- Session persistence via localStorage with automatic hydration on page load
 
 **UI Component System**
 - **shadcn/ui** component library built on Radix UI primitives
