@@ -19,9 +19,40 @@ import {
   addMemberSchema,
 } from "@shared/schema";
 import type { AuthResponse } from "@shared/schema";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+  try {
+    await resend.emails.send({
+      from: "Emaús Vota <onboarding@resend.dev>",
+      to: email,
+      subject: "Seu código de verificação - Emaús Vota",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FFA500;">Emaús Vota</h2>
+          <p>Olá,</p>
+          <p>Seu código de verificação é:</p>
+          <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="color: #FFA500; font-size: 32px; letter-spacing: 8px; margin: 0;">${code}</h1>
+          </div>
+          <p>Este código expira em 15 minutos.</p>
+          <p>Se você não solicitou este código, ignore este email.</p>
+          <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
+          <p style="color: #888; font-size: 12px;">UMP Emaús - Sistema de Votação</p>
+        </div>
+      `,
+    });
+    return true;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return false;
+  }
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -80,7 +111,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt,
       });
 
-      console.log(`Código de verificação para ${validatedData.email}: ${code}`);
+      const emailSent = await sendVerificationEmail(validatedData.email, code);
+
+      if (!emailSent) {
+        console.log(`[FALLBACK] Código de verificação para ${validatedData.email}: ${code}`);
+      }
 
       res.json({ message: "Código enviado para seu email" });
     } catch (error) {
