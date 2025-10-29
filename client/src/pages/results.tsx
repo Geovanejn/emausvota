@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ChartBar, LogOut, Trophy, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import type { ElectionResults } from "@shared/schema";
@@ -47,7 +48,14 @@ export default function ResultsPage() {
               Resultados
             </h1>
             {results && (
-              <p className="text-sm sm:text-base text-muted-foreground mt-1">{results.electionName}</p>
+              <>
+                <p className="text-sm sm:text-base text-muted-foreground mt-1">{results.electionName}</p>
+                {results.isActive && (
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {results.currentScrutiny}º Escrutínio • Eleição em andamento
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div className="flex gap-2 self-end sm:self-auto">
@@ -114,6 +122,13 @@ export default function ResultsPage() {
                         ? ((candidate.voteCount / totalVotes) * 100).toFixed(1) 
                         : "0.0";
 
+                      // Helper function to get scrutiny label
+                      const getScrutinyLabel = (scrutiny?: number) => {
+                        if (!scrutiny) return null;
+                        const ordinals = ["1º", "2º", "3º"];
+                        return `Eleito no ${ordinals[scrutiny - 1]} Escrutínio`;
+                      };
+
                       return (
                         <Card
                           key={candidate.candidateId}
@@ -130,11 +145,25 @@ export default function ResultsPage() {
                                 {isWinner && (
                                   <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
                                 )}
+                                <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                                  <AvatarImage 
+                                    src={candidate.photoUrl} 
+                                    alt={candidate.candidateName}
+                                  />
+                                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                    {candidate.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <div className="min-w-0">
                                   <p className="font-medium text-base sm:text-lg truncate">
                                     {candidate.candidateName}
                                   </p>
-                                  {isWinner && (
+                                  {isWinner && candidate.wonAtScrutiny && (
+                                    <p className="text-xs sm:text-sm text-primary font-medium">
+                                      {getScrutinyLabel(candidate.wonAtScrutiny)}
+                                    </p>
+                                  )}
+                                  {isWinner && !candidate.wonAtScrutiny && (
                                     <p className="text-xs sm:text-sm text-primary font-medium">
                                       Vencedor
                                     </p>
