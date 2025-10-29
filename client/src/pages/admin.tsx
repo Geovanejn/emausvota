@@ -60,8 +60,14 @@ export default function AdminPage() {
     enabled: !!activeElection,
   });
 
-  const { data: members = [] } = useQuery<Array<{ id: number; fullName: string; email: string }>>({
+  const { data: members = [] } = useQuery<Array<{ id: number; fullName: string; email: string; isAdmin: boolean }>>({
     queryKey: ["/api/members"],
+  });
+
+  // Non-admin members for candidate selection
+  const { data: nonAdminMembers = [] } = useQuery<Array<{ id: number; fullName: string; email: string }>>({
+    queryKey: ["/api/members/non-admins"],
+    enabled: isAddCandidateOpen, // Only fetch when dialog is open
   });
 
   const createElectionMutation = useMutation({
@@ -107,7 +113,7 @@ export default function AdminPage() {
   });
 
   const addCandidateMutation = useMutation({
-    mutationFn: async (candidate: { name: string; positionId: number; electionId: number }) => {
+    mutationFn: async (candidate: { name: string; email: string; userId: number; positionId: number; electionId: number }) => {
       return await apiRequest("POST", "/api/candidates", candidate);
     },
     onSuccess: () => {
@@ -208,11 +214,13 @@ export default function AdminPage() {
       return;
     }
 
-    const selectedMember = members.find(m => m.id === parseInt(selectedMemberId));
+    const selectedMember = nonAdminMembers.find(m => m.id === parseInt(selectedMemberId));
     if (!selectedMember) return;
 
     addCandidateMutation.mutate({
       name: selectedMember.fullName,
+      email: selectedMember.email,
+      userId: selectedMember.id,
       positionId: parseInt(selectedPositionId),
       electionId: activeElection.id,
     });
@@ -553,7 +561,7 @@ export default function AdminPage() {
                   <SelectValue placeholder="Selecione o membro" />
                 </SelectTrigger>
                 <SelectContent>
-                  {members.map((member) => (
+                  {nonAdminMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id.toString()}>
                       {member.fullName}
                     </SelectItem>
