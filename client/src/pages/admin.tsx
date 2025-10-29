@@ -134,6 +134,7 @@ export default function AdminPage() {
       return await apiRequest("POST", "/api/admin/members", member);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Membro cadastrado!",
         description: "O membro foi cadastrado com sucesso",

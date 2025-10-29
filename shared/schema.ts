@@ -15,8 +15,6 @@ export const users = sqliteTable("users", {
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
-  isAdmin: true,
-  isMember: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
