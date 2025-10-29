@@ -59,7 +59,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
         try {
           const canvas = await html2canvas(imageRef.current, {
-            backgroundColor: "#F9F9F9",
+            backgroundColor: "#FFFFFF",
             scale: 2,
             logging: false,
             width: dimensions.width,
@@ -87,186 +87,106 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
     const is916 = aspectRatio === "9:16";
 
-    // Corrected specs based on user feedback analysis
-    const specs = is916 ? {
-      cardWidth: 440,
-      cardHeight: 160,
-      headerHeight: 50,
-      photoSize: 110,
-      photoOffsetRight: 30,
-      photoOffsetBottom: -30,
-      titleSize: 110,
-      titleY: 230,
-      letterSpacing: 20,
-      cargoSize: 26,
-      nameSize: 22,
-      voteSize: 18,
-      verseSize: 22,
-      logoWidth: 270,
-      logoHeight: 90,
-      positions: [
-        { x: 150, y: 530 },   // Presidente
-        { x: 590, y: 530 },   // Vice
-        { x: 150, y: 790 },   // 1º Sec (was 760, now 790 for 260px spacing)
-        { x: 590, y: 790 },   // 2º Sec
-        { x: 370, y: 1070 },  // Tesoureiro (was 1010, now 1070)
-      ],
-      verseY: 1620,
-      logoY: 1750,
-    } : {
-      cardWidth: 420,
-      cardHeight: 150,
-      headerHeight: 45,
-      photoSize: 100,
-      photoOffsetRight: 25,
-      photoOffsetBottom: -25,
-      titleSize: 100,
-      titleY: 160,
-      letterSpacing: 15,
-      cargoSize: 24,
-      nameSize: 20,
-      voteSize: 16,
-      verseSize: 20,
-      logoWidth: 240,
-      logoHeight: 80,
-      positions: [
-        { x: 160, y: 440 },   // Presidente
-        { x: 600, y: 440 },   // Vice
-        { x: 160, y: 660 },   // 1º Sec
-        { x: 600, y: 660 },   // 2º Sec
-        { x: 380, y: 870 },   // Tesoureiro
-      ],
-      verseY: 1170,
-      logoY: 1240,
-    };
-
-    const WinnerCard = ({ winner, index }: { winner: Winner; index: number }) => {
-      const pos = specs.positions[index];
-      
-      return (
+    const WinnerCard = ({ winner }: { winner: Winner }) => (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          backgroundColor: "#FFFFFF",
+          borderRadius: "16px",
+          padding: is916 ? "32px 24px" : "28px 20px",
+          boxShadow: "0 8px 24px rgba(255, 165, 0, 0.15)",
+          border: "2px solid #FFF7E6",
+          gap: is916 ? "20px" : "16px",
+        }}
+      >
+        {/* Photo */}
         <div
           style={{
-            position: "absolute",
-            left: `${pos.x}px`,
-            top: `${pos.y}px`,
-            width: `${specs.cardWidth}px`,
-            height: `${specs.cardHeight}px`,
-            display: "flex",
-            flexDirection: "column",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "20px",
-            overflow: "visible",
-            boxShadow: "0 3px 6px rgba(0, 0, 0, 0.1)",
+            width: is916 ? "120px" : "100px",
+            height: is916 ? "120px" : "100px",
+            borderRadius: "50%",
+            backgroundColor: "#FFF7E6",
+            overflow: "hidden",
+            border: "4px solid #FFA500",
+            boxShadow: "0 4px 12px rgba(255, 165, 0, 0.3)",
           }}
         >
-          {/* Yellow header - integrated at top */}
-          <div
-            style={{
-              height: `${specs.headerHeight}px`,
-              backgroundColor: "#FFD84B",
-              borderRadius: "20px 20px 0 0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "0 16px",
-            }}
-          >
-            <p
+          {winner.photoUrl ? (
+            <img
+              src={winner.photoUrl}
+              alt={winner.candidateName}
               style={{
-                fontSize: `${specs.cargoSize}px`,
-                fontWeight: "600",
-                fontStyle: "italic",
-                color: "#1C1C1C",
-                margin: 0,
-                textTransform: "uppercase",
-                fontFamily: "'Poppins', sans-serif",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: is916 ? "40px" : "34px",
+                fontWeight: "800",
+                color: "#FFA500",
+                backgroundColor: "#FFF7E6",
               }}
             >
-              {winner.positionName}
-            </p>
-          </div>
-
-          {/* Card body with text */}
-          <div
-            style={{
-              flex: 1,
-              padding: "20px 20px 20px 20px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: `${specs.nameSize}px`,
-                fontWeight: "700",
-                color: "#1C1C1C",
-                marginBottom: "6px",
-                textTransform: "uppercase",
-                lineHeight: "1.2",
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
-              {winner.candidateName}
-            </p>
-            <p
-              style={{
-                fontSize: `${specs.voteSize}px`,
-                color: "#4A4A4A",
-                fontWeight: "400",
-                fontFamily: "'Poppins', sans-serif",
-              }}
-            >
-              {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
-            </p>
-          </div>
-
-          {/* Photo OVERLAPPING bottom-right corner */}
-          <div
-            style={{
-              position: "absolute",
-              right: `${specs.photoOffsetRight}px`,
-              bottom: `${specs.photoOffsetBottom}px`,
-              width: `${specs.photoSize}px`,
-              height: `${specs.photoSize}px`,
-              borderRadius: "50%",
-              backgroundColor: "#E8E8E8",
-              overflow: "hidden",
-              border: "4px solid #FFFFFF",
-              boxShadow: "0 3px 6px rgba(0, 0, 0, 0.25)",
-            }}
-          >
-            {winner.photoUrl ? (
-              <img
-                src={winner.photoUrl}
-                alt={winner.candidateName}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: is916 ? "36px" : "32px",
-                  fontWeight: "700",
-                  color: "#F7B731",
-                  backgroundColor: "#FFF7E6",
-                }}
-              >
-                {winner.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-              </div>
-            )}
-          </div>
+              {winner.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+          )}
         </div>
-      );
-    };
+
+        {/* Position badge */}
+        <div
+          style={{
+            backgroundColor: "#FFA500",
+            color: "#FFFFFF",
+            padding: is916 ? "8px 24px" : "6px 20px",
+            borderRadius: "20px",
+            fontSize: is916 ? "16px" : "14px",
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          {winner.positionName}
+        </div>
+
+        {/* Name */}
+        <h3
+          style={{
+            fontSize: is916 ? "24px" : "20px",
+            fontWeight: "800",
+            color: "#1A1A1A",
+            margin: 0,
+            textAlign: "center",
+            textTransform: "uppercase",
+            lineHeight: "1.2",
+          }}
+        >
+          {winner.candidateName}
+        </h3>
+
+        {/* Vote details */}
+        <p
+          style={{
+            fontSize: is916 ? "14px" : "12px",
+            color: "#666666",
+            margin: 0,
+            textAlign: "center",
+            fontWeight: "500",
+          }}
+        >
+          {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
+        </p>
+      </div>
+    );
 
     return (
       <div className="fixed -left-[9999px] -top-[9999px]">
@@ -275,124 +195,106 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           style={{
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,
-            backgroundColor: "#F9F9F9",
-            fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
-            position: "relative",
-            overflow: "hidden",
+            backgroundColor: "#FFFFFF",
+            padding: is916 ? "60px 50px" : "50px 40px",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+            display: "flex",
+            flexDirection: "column",
+            gap: is916 ? "50px" : "40px",
           }}
         >
-          {/* Background watermark - very subtle */}
+          {/* Header with gradient background */}
           <div
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              opacity: 0.015,
-              fontSize: is916 ? "200px" : "170px",
-              fontWeight: "900",
-              color: "#F0F0F0",
-              display: "flex",
-              flexWrap: "wrap",
-              alignContent: "flex-start",
-              gap: is916 ? "60px" : "50px",
-              padding: is916 ? "120px 30px" : "100px 20px",
-              transform: "rotate(-12deg)",
-              zIndex: 0,
-              fontFamily: "'Montserrat', sans-serif",
-            }}
-          >
-            {Array.from({ length: 25 }).map((_, i) => (
-              <span key={i} style={{ whiteSpace: "nowrap" }}>ELEIÇÃO</span>
-            ))}
-          </div>
-
-          {/* Title */}
-          <div
-            style={{
-              position: "absolute",
-              top: `${specs.titleY}px`,
-              left: "540px",
-              transform: "translateX(-50%)",
+              background: "linear-gradient(135deg, #FFA500 0%, #FFD700 100%)",
+              borderRadius: "20px",
+              padding: is916 ? "40px 30px" : "32px 24px",
               textAlign: "center",
-              zIndex: 1,
+              boxShadow: "0 8px 24px rgba(255, 165, 0, 0.3)",
             }}
           >
             <h1
               style={{
-                fontSize: `${specs.titleSize}px`,
-                fontWeight: "800",
-                color: "#000000",
+                fontSize: is916 ? "56px" : "48px",
+                fontWeight: "900",
+                color: "#FFFFFF",
                 margin: 0,
-                lineHeight: "1",
-                letterSpacing: `${specs.letterSpacing}px`,
-                fontFamily: "'Montserrat', sans-serif",
+                marginBottom: "12px",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
               }}
             >
-              <span style={{ fontWeight: "800" }}>ELEIÇÃO</span>{" "}
-              <span
-                style={{
-                  fontWeight: "400",
-                  color: "transparent",
-                  WebkitTextStroke: "2px #000000",
-                }}
-              >
-                {year}
-              </span>
+              Eleição {year}
             </h1>
-          </div>
-
-          {/* Winner Cards - absolutely positioned */}
-          {sortedWinners.map((winner, index) => (
-            <WinnerCard key={winner.positionId} winner={winner} index={index} />
-          ))}
-
-          {/* Scripture */}
-          <div
-            style={{
-              position: "absolute",
-              top: `${specs.verseY}px`,
-              left: "540px",
-              transform: "translateX(-50%)",
-              width: "900px",
-              textAlign: "center",
-              zIndex: 1,
-            }}
-          >
             <p
               style={{
-                fontSize: `${specs.verseSize}px`,
-                fontStyle: "italic",
-                color: "#3A3A3A",
-                lineHeight: "1.5",
+                fontSize: is916 ? "18px" : "16px",
+                color: "#FFFFFF",
                 margin: 0,
-                fontWeight: "400",
-                fontFamily: "'Lato', sans-serif",
+                fontWeight: "600",
+                opacity: 0.95,
               }}
             >
-              Porque de Deus somos cooperadores; lavoura de Deus,
-              <br />
-              edifício de Deus sois vós. - 1 coríntios 3:9
+              UMP Emaús - Resultados Oficiais
             </p>
           </div>
 
-          {/* Logo */}
+          {/* Winners Grid */}
           <div
             style={{
-              position: "absolute",
-              top: `${specs.logoY}px`,
-              left: "540px",
-              transform: "translateX(-50%)",
-              zIndex: 1,
+              display: "grid",
+              gridTemplateColumns: is916 ? "1fr 1fr" : "1fr 1fr",
+              gap: is916 ? "24px" : "20px",
+              flex: 1,
             }}
           >
+            {sortedWinners.slice(0, 4).map((winner) => (
+              <WinnerCard key={winner.positionId} winner={winner} />
+            ))}
+            
+            {/* Tesoureiro - centered full width */}
+            {sortedWinners[4] && (
+              <div style={{ gridColumn: "1 / -1", maxWidth: "480px", margin: "0 auto", width: "100%" }}>
+                <WinnerCard winner={sortedWinners[4]} />
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: is916 ? "24px" : "20px",
+              paddingTop: is916 ? "20px" : "16px",
+              borderTop: "2px solid #FFF7E6",
+            }}
+          >
+            {/* Scripture */}
+            <p
+              style={{
+                fontSize: is916 ? "16px" : "14px",
+                color: "#666666",
+                textAlign: "center",
+                fontStyle: "italic",
+                margin: 0,
+                maxWidth: "800px",
+                lineHeight: "1.6",
+              }}
+            >
+              "Porque de Deus somos cooperadores; lavoura de Deus, edifício de Deus sois vós."
+              <br />
+              <span style={{ fontWeight: "600", color: "#FFA500" }}>1 Coríntios 3:9</span>
+            </p>
+
+            {/* Logo */}
             <img
               src={logoUrl}
-              alt="emaús"
+              alt="UMP Emaús"
               style={{
-                width: `${specs.logoWidth}px`,
-                height: `${specs.logoHeight}px`,
+                height: is916 ? "60px" : "50px",
                 objectFit: "contain",
               }}
             />
