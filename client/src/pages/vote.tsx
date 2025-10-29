@@ -3,11 +3,21 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { CheckCircle, LogOut, Vote } from "lucide-react";
 import { useLocation } from "wouter";
-import type { Election, Position, Candidate } from "@shared/schema";
+import type { Election, Position } from "@shared/schema";
+
+type CandidateWithEmail = {
+  id: number;
+  name: string;
+  email: string;
+  positionId: number;
+  electionId: number;
+  photoUrl?: string;
+};
 
 export default function VotePage() {
   const { user, logout } = useAuth();
@@ -23,7 +33,7 @@ export default function VotePage() {
     queryKey: ["/api/positions"],
   });
 
-  const { data: allCandidates = [] } = useQuery<Candidate[]>({
+  const { data: allCandidates = [] } = useQuery<CandidateWithEmail[]>({
     queryKey: ["/api/candidates/all"],
     enabled: !!activeElection,
   });
@@ -116,7 +126,7 @@ export default function VotePage() {
               {activeElection.name}
             </p>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Escolha seu candidato para cada cargo
+              {activeElection.currentScrutiny}º Escrutínio • Escolha seu candidato para cada cargo
             </p>
           </div>
           <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
@@ -160,7 +170,18 @@ export default function VotePage() {
                           data-testid={`card-candidate-${candidate.id}`}
                         >
                           <CardContent className="p-4">
-                            <p className="font-medium mb-3">{candidate.name}</p>
+                            <div className="flex items-center gap-3 mb-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage 
+                                  src={candidate.photoUrl} 
+                                  alt={candidate.name}
+                                />
+                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                  {candidate.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <p className="font-medium flex-1">{candidate.name}</p>
+                            </div>
                             <Button
                               className="w-full"
                               onClick={() => handleVote(candidate.id, position.id)}

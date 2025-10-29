@@ -340,7 +340,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/candidates/all", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const candidates = storage.getAllCandidates();
-      res.json(candidates);
+      // Add photo URLs to candidates
+      const candidatesWithPhotos = candidates.map(candidate => ({
+        ...candidate,
+        photoUrl: getGravatarUrl(candidate.email),
+      }));
+      res.json(candidatesWithPhotos);
     } catch (error) {
       console.error("Get all candidates error:", error);
       res.status(500).json({ 
