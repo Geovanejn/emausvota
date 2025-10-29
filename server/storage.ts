@@ -49,20 +49,39 @@ export interface IStorage {
 export class SQLiteStorage implements IStorage {
   getUserByEmail(email: string): User | undefined {
     const stmt = db.prepare("SELECT * FROM users WHERE email = ?");
-    return stmt.get(email) as User | undefined;
+    const row = stmt.get(email) as any;
+    if (!row) return undefined;
+    
+    return {
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      password: row.password,
+      isAdmin: Boolean(row.is_admin),
+      isMember: Boolean(row.is_member),
+    };
   }
 
   createUser(user: InsertUser): User {
     const stmt = db.prepare(
       "INSERT INTO users (full_name, email, password, is_admin, is_member) VALUES (?, ?, ?, ?, ?) RETURNING *"
     );
-    return stmt.get(
+    const row = stmt.get(
       user.fullName,
       user.email,
       user.password,
       user.isAdmin ? 1 : 0,
       user.isMember ? 1 : 0
-    ) as User;
+    ) as any;
+    
+    return {
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      password: row.password,
+      isAdmin: Boolean(row.is_admin),
+      isMember: Boolean(row.is_member),
+    };
   }
 
   getAllPositions(): Position[] {
