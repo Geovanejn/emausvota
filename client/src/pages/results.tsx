@@ -39,28 +39,28 @@ export default function ResultsPage() {
     <div className="min-h-screen bg-background">
       <div className="h-2 bg-primary w-full" />
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="flex items-center justify-between mb-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-              <ChartBar className="w-8 h-8" />
-              Resultados da Eleição
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2 sm:gap-3">
+              <ChartBar className="w-6 h-6 sm:w-8 sm:h-8" />
+              Resultados
             </h1>
             {results && (
-              <p className="text-muted-foreground mt-1">{results.electionName}</p>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">{results.electionName}</p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 self-end sm:self-auto">
             {isAuthenticated && (
-              <Button variant="outline" onClick={handleBack} data-testid="button-back">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
+              <Button variant="outline" onClick={handleBack} data-testid="button-back" size="sm" className="sm:h-9">
+                <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Voltar</span>
               </Button>
             )}
             {isAuthenticated && (
-              <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sair
+              <Button variant="outline" onClick={handleLogout} data-testid="button-logout" size="sm" className="sm:h-9">
+                <LogOut className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             )}
           </div>
@@ -76,7 +76,7 @@ export default function ResultsPage() {
             </CardHeader>
           </Card>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-8 sm:space-y-12">
             {results.positions.map((position) => {
               const sortedCandidates = [...position.candidates].sort(
                 (a, b) => b.voteCount - a.voteCount
@@ -86,9 +86,9 @@ export default function ResultsPage() {
 
               return (
                 <div key={position.positionId} data-testid={`position-${position.positionId}`}>
-                  <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-                    {position.positionName}
-                    <span className="text-sm font-normal text-muted-foreground">
+                  <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <span>{position.positionName}</span>
+                    <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                       ({totalVotes} votos)
                     </span>
                   </h2>
@@ -110,34 +110,34 @@ export default function ResultsPage() {
                           }
                           data-testid={`candidate-result-${candidate.candidateId}`}
                         >
-                          <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
+                          <CardContent className="p-4 sm:p-6">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                 {isWinner && (
-                                  <Trophy className="w-6 h-6 text-primary" />
+                                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
                                 )}
-                                <div>
-                                  <p className="font-medium text-lg">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-base sm:text-lg truncate">
                                     {candidate.candidateName}
                                   </p>
                                   {isWinner && (
-                                    <p className="text-sm text-primary font-medium">
+                                    <p className="text-xs sm:text-sm text-primary font-medium">
                                       Vencedor
                                     </p>
                                   )}
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-2xl font-bold" data-testid={`vote-count-${candidate.candidateId}`}>
+                              <div className="text-right shrink-0">
+                                <p className="text-xl sm:text-2xl font-bold" data-testid={`vote-count-${candidate.candidateId}`}>
                                   {candidate.voteCount}
                                 </p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs sm:text-sm text-muted-foreground">
                                   {percentage}%
                                 </p>
                               </div>
                             </div>
                             
-                            <div className="mt-4 bg-muted/30 rounded-full h-2 overflow-hidden">
+                            <div className="mt-3 sm:mt-4 bg-muted/30 rounded-full h-2 overflow-hidden">
                               <div
                                 className="bg-primary h-full transition-all duration-500 rounded-full"
                                 style={{ width: `${percentage}%` }}
@@ -153,12 +153,12 @@ export default function ResultsPage() {
             })}
 
             <Card className="bg-muted/30 border-muted">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start gap-3">
-                  <ChartBar className="w-5 h-5 text-primary mt-0.5" />
+                  <ChartBar className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-medium mb-1">Resultados finais</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="font-medium mb-1 text-sm sm:text-base">Resultados finais</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Estes são os resultados oficiais da eleição. Todos os votos foram contabilizados de forma segura e transparente.
                     </p>
                   </div>
