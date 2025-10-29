@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = storage.getUserByEmail(validatedData.email);
       if (!user) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
+        return res.status(404).json({ message: "Este e-mail não está cadastrado no sistema. Entre em contato com o administrador." });
       }
 
       storage.deleteVerificationCodesByEmail(validatedData.email);
@@ -141,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const user = storage.getUserByEmail(validatedData.email);
       if (!user) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
+        return res.status(404).json({ message: "Este e-mail não está cadastrado no sistema" });
       }
 
       storage.deleteVerificationCodesByEmail(validatedData.email);
