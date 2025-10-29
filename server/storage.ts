@@ -91,13 +91,28 @@ export class SQLiteStorage implements IStorage {
 
   getActiveElection(): Election | null {
     const stmt = db.prepare("SELECT * FROM elections WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1");
-    const result = stmt.get() as Election | undefined;
-    return result || null;
+    const row = stmt.get() as any;
+    if (!row) return null;
+    
+    return {
+      id: row.id,
+      name: row.name,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+    };
   }
 
   getElectionById(id: number): Election | undefined {
     const stmt = db.prepare("SELECT * FROM elections WHERE id = ?");
-    return stmt.get(id) as Election | undefined;
+    const row = stmt.get(id) as any;
+    if (!row) return undefined;
+    
+    return {
+      id: row.id,
+      name: row.name,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+    };
   }
 
   createElection(name: string): Election {
@@ -106,7 +121,14 @@ export class SQLiteStorage implements IStorage {
     const stmt = db.prepare(
       "INSERT INTO elections (name, is_active) VALUES (?, 1) RETURNING *"
     );
-    return stmt.get(name) as Election;
+    const row = stmt.get(name) as any;
+    
+    return {
+      id: row.id,
+      name: row.name,
+      isActive: Boolean(row.is_active),
+      createdAt: row.created_at,
+    };
   }
 
   closeElection(id: number): void {
@@ -116,7 +138,13 @@ export class SQLiteStorage implements IStorage {
 
   getAllCandidates(): Candidate[] {
     const stmt = db.prepare("SELECT * FROM candidates");
-    return stmt.all() as Candidate[];
+    const rows = stmt.all() as any[];
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      positionId: row.position_id,
+      electionId: row.election_id,
+    }));
   }
 
   getCandidatesByElection(electionId: number): CandidateWithDetails[] {
@@ -131,37 +159,67 @@ export class SQLiteStorage implements IStorage {
       WHERE c.election_id = ?
       ORDER BY p.id, c.name
     `);
-    return stmt.all(electionId) as CandidateWithDetails[];
+    const rows = stmt.all(electionId) as any[];
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      positionId: row.position_id,
+      electionId: row.election_id,
+      positionName: row.positionName,
+      electionName: row.electionName,
+    }));
   }
 
   getCandidatesByPosition(positionId: number, electionId: number): Candidate[] {
     const stmt = db.prepare(
       "SELECT * FROM candidates WHERE position_id = ? AND election_id = ?"
     );
-    return stmt.all(positionId, electionId) as Candidate[];
+    const rows = stmt.all(positionId, electionId) as any[];
+    return rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      positionId: row.position_id,
+      electionId: row.election_id,
+    }));
   }
 
   createCandidate(candidate: InsertCandidate): Candidate {
     const stmt = db.prepare(
       "INSERT INTO candidates (name, position_id, election_id) VALUES (?, ?, ?) RETURNING *"
     );
-    return stmt.get(
+    const row = stmt.get(
       candidate.name,
       candidate.positionId,
       candidate.electionId
-    ) as Candidate;
+    ) as any;
+    
+    return {
+      id: row.id,
+      name: row.name,
+      positionId: row.position_id,
+      electionId: row.election_id,
+    };
   }
 
   createVote(vote: InsertVote): Vote {
     const stmt = db.prepare(
       "INSERT INTO votes (voter_id, candidate_id, position_id, election_id) VALUES (?, ?, ?, ?) RETURNING *"
     );
-    return stmt.get(
+    const row = stmt.get(
       vote.voterId,
       vote.candidateId,
       vote.positionId,
       vote.electionId
-    ) as Vote;
+    ) as any;
+    
+    return {
+      id: row.id,
+      voterId: row.voter_id,
+      candidateId: row.candidate_id,
+      positionId: row.position_id,
+      electionId: row.election_id,
+      createdAt: row.created_at,
+    };
   }
 
   hasUserVoted(voterId: number, positionId: number, electionId: number): boolean {
