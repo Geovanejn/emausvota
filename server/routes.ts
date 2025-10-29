@@ -714,65 +714,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/elections/:id/advance-scrutiny", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
-    try {
-      const electionId = parseInt(req.params.id);
-      
-      const election = storage.getElectionById(electionId);
-      if (!election) {
-        return res.status(404).json({ message: "Eleição não encontrada" });
-      }
-
-      if (!election.isActive) {
-        return res.status(400).json({ message: "Eleição não está ativa" });
-      }
-
-      if (election.currentScrutiny >= 3) {
-        return res.status(400).json({ message: "Eleição já está no último escrutínio" });
-      }
-
-      storage.advanceScrutiny(electionId);
-      res.json({ message: "Escrutínio avançado com sucesso" });
-    } catch (error) {
-      console.error("Advance scrutiny error:", error);
-      res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Erro ao avançar escrutínio" 
-      });
-    }
-  });
-
-  app.patch("/api/elections/:id/set-winner", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
-    try {
-      const electionId = parseInt(req.params.id);
-      const { candidateId, positionId } = req.body;
-      
-      if (!candidateId || !positionId) {
-        return res.status(400).json({ message: "Dados incompletos" });
-      }
-
-      const election = storage.getElectionById(electionId);
-      if (!election) {
-        return res.status(404).json({ message: "Eleição não encontrada" });
-      }
-
-      if (!election.isActive) {
-        return res.status(400).json({ message: "Eleição não está ativa" });
-      }
-
-      if (election.currentScrutiny !== 3) {
-        return res.status(400).json({ message: "Vencedor só pode ser escolhido no 3º escrutínio" });
-      }
-
-      storage.setWinner(electionId, candidateId, positionId, 3);
-      res.json({ message: "Vencedor definido com sucesso" });
-    } catch (error) {
-      console.error("Set winner error:", error);
-      res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Erro ao definir vencedor" 
-      });
-    }
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }

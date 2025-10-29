@@ -617,32 +617,40 @@ export default function AdminPage() {
                         </div>
 
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                          {attendance.map((att) => (
-                            <button
-                              key={att.memberId}
-                              onClick={() => setAttendanceMutation.mutate({
-                                electionId: activeElection.id,
-                                memberId: att.memberId,
-                                isPresent: !att.isPresent
-                              })}
-                              className="w-full flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors text-left"
-                              data-testid={`button-toggle-attendance-${att.memberId}`}
-                            >
-                              {att.isPresent ? (
-                                <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-                              ) : (
-                                <Square className="w-5 h-5 text-muted-foreground shrink-0" />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className={`font-medium truncate ${att.isPresent ? 'text-foreground' : 'text-muted-foreground'}`}>
-                                  {att.memberName}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {att.memberEmail}
-                                </p>
-                              </div>
-                            </button>
-                          ))}
+                          {attendance.map((att) => {
+                            const member = members.find(m => m.id === att.memberId);
+                            const isAdmin = member?.isAdmin || false;
+                            
+                            // Skip admin in attendance list
+                            if (isAdmin) return null;
+                            
+                            return (
+                              <button
+                                key={att.memberId}
+                                onClick={() => setAttendanceMutation.mutate({
+                                  electionId: activeElection.id,
+                                  memberId: att.memberId,
+                                  isPresent: !att.isPresent
+                                })}
+                                className="w-full flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors text-left"
+                                data-testid={`button-toggle-attendance-${att.memberId}`}
+                              >
+                                {att.isPresent ? (
+                                  <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                                ) : (
+                                  <Square className="w-5 h-5 text-muted-foreground shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className={`font-medium truncate ${att.isPresent ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                    {att.memberName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {att.memberEmail}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -738,7 +746,7 @@ export default function AdminPage() {
                           )}
 
                           {/* Position completed - show button to open next */}
-                          {!position.needsNextScrutiny && !position.isTied && (
+                          {!position.needsNextScrutiny && position.winnerId && (
                             <div className="space-y-3">
                               <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div className="flex items-center gap-2">
@@ -747,9 +755,9 @@ export default function AdminPage() {
                                     Cargo decidido!
                                   </p>
                                 </div>
-                                {position.winner && (
+                                {position.candidates.find(c => c.isElected) && (
                                   <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                                    Vencedor: {position.winner.candidateName}
+                                    Vencedor: {position.candidates.find(c => c.isElected)?.candidateName}
                                   </p>
                                 )}
                               </div>
@@ -768,7 +776,7 @@ export default function AdminPage() {
                           )}
 
                           {/* Show tied positions in 3rd scrutiny */}
-                          {activePosition.currentScrutiny === 3 && position.isTied && (
+                          {activePosition.currentScrutiny === 3 && position.needsNextScrutiny && (
                             <div className="space-y-3">
                               <div className="p-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 rounded-lg">
                                 <p className="text-sm font-medium text-red-900 dark:text-red-100">
@@ -1183,15 +1191,18 @@ export default function AdminPage() {
           ref={exportImageRef}
           electionTitle={activeElection.name}
           winners={results.positions
-            .filter(p => p.winner)
-            .map(p => ({
-              positionId: p.positionId,
-              positionName: p.positionName,
-              candidateName: p.winner!.candidateName,
-              photoUrl: p.winner!.photoUrl,
-              voteCount: p.winner!.voteCount,
-              wonAtScrutiny: p.winner!.wonAtScrutiny || 1,
-            }))}
+            .filter(p => p.winnerId)
+            .map(p => {
+              const winner = p.candidates.find(c => c.isElected);
+              return {
+                positionId: p.positionId,
+                positionName: p.positionName,
+                candidateName: winner?.candidateName || '',
+                photoUrl: winner?.photoUrl || '',
+                voteCount: winner?.voteCount || 0,
+                wonAtScrutiny: winner?.electedInScrutiny || 1,
+              };
+            })}
         />
       )}
     </div>
