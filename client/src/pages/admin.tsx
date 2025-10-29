@@ -246,15 +246,15 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background">
       <div className="h-2 bg-primary w-full" />
       
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Administração</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Administração</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Bem-vindo, {user?.fullName}
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+          <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
             <LogOut className="w-4 h-4 mr-2" />
             Sair
           </Button>
@@ -362,28 +362,45 @@ export default function AdminPage() {
                       <p className="text-sm mt-1">Adicione candidatos para começar</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/50">
-                            <th className="text-left px-6 py-3 font-semibold text-sm">Nome</th>
-                            <th className="text-left px-6 py-3 font-semibold text-sm">Cargo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {candidates.map((candidate) => (
-                            <tr 
-                              key={candidate.id} 
-                              className="border-b border-border hover:bg-muted/30 transition-colors"
-                              data-testid={`row-candidate-${candidate.id}`}
-                            >
-                              <td className="px-6 py-4">{candidate.name}</td>
-                              <td className="px-6 py-4">{candidate.positionName}</td>
+                    <>
+                      {/* Mobile view - Cards */}
+                      <div className="block sm:hidden space-y-3">
+                        {candidates.map((candidate) => (
+                          <div
+                            key={candidate.id}
+                            className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors"
+                            data-testid={`row-candidate-${candidate.id}`}
+                          >
+                            <p className="font-medium">{candidate.name}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{candidate.positionName}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Desktop view - Table */}
+                      <div className="hidden sm:block overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-border bg-muted/50">
+                              <th className="text-left px-6 py-3 font-semibold text-sm">Nome</th>
+                              <th className="text-left px-6 py-3 font-semibold text-sm">Cargo</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {candidates.map((candidate) => (
+                              <tr 
+                                key={candidate.id} 
+                                className="border-b border-border hover:bg-muted/30 transition-colors"
+                                data-testid={`row-candidate-${candidate.id}`}
+                              >
+                                <td className="px-6 py-4">{candidate.name}</td>
+                                <td className="px-6 py-4">{candidate.positionName}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -404,39 +421,73 @@ export default function AdminPage() {
                     <p className="text-sm mt-1">Cadastre membros para permitir votação</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/50">
-                          <th className="text-left px-6 py-3 font-semibold text-sm">Nome</th>
-                          <th className="text-left px-6 py-3 font-semibold text-sm">Email</th>
-                          <th className="text-right px-6 py-3 font-semibold text-sm">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {members.map((member) => (
-                          <tr 
-                            key={member.id} 
-                            className="border-b border-border hover:bg-muted/30 transition-colors"
-                            data-testid={`row-member-${member.id}`}
-                          >
-                            <td className="px-6 py-4" data-testid={`text-member-name-${member.id}`}>{member.fullName}</td>
-                            <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
-                            <td className="px-6 py-4 text-right">
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteMember(member.id)}
-                                data-testid={`button-delete-member-${member.id}`}
-                              >
-                                Remover
-                              </Button>
-                            </td>
+                  <>
+                    {/* Mobile view - Cards */}
+                    <div className="block sm:hidden space-y-3">
+                      {members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="p-4 border border-border rounded-lg"
+                          data-testid={`row-member-${member.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate" data-testid={`text-member-name-${member.id}`}>
+                                {member.fullName}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate mt-1">
+                                {member.email}
+                              </p>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteMember(member.id)}
+                              data-testid={`button-delete-member-${member.id}`}
+                              className="shrink-0"
+                            >
+                              Remover
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop view - Table */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/50">
+                            <th className="text-left px-6 py-3 font-semibold text-sm">Nome</th>
+                            <th className="text-left px-6 py-3 font-semibold text-sm">Email</th>
+                            <th className="text-right px-6 py-3 font-semibold text-sm">Ações</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {members.map((member) => (
+                            <tr 
+                              key={member.id} 
+                              className="border-b border-border hover:bg-muted/30 transition-colors"
+                              data-testid={`row-member-${member.id}`}
+                            >
+                              <td className="px-6 py-4" data-testid={`text-member-name-${member.id}`}>{member.fullName}</td>
+                              <td className="px-6 py-4 text-muted-foreground">{member.email}</td>
+                              <td className="px-6 py-4 text-right">
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleDeleteMember(member.id)}
+                                  data-testid={`button-delete-member-${member.id}`}
+                                >
+                                  Remover
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
