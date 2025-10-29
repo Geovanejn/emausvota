@@ -270,12 +270,12 @@ export class SQLiteStorage implements IStorage {
   }
 
   getLatestElectionResults(): ElectionResults | null {
-    const stmt = db.prepare("SELECT * FROM elections ORDER BY created_at DESC LIMIT 1");
-    const election = stmt.get() as Election | undefined;
+    const stmt = db.prepare("SELECT * FROM elections WHERE is_active = 0 ORDER BY created_at DESC LIMIT 1");
+    const row = stmt.get() as any;
     
-    if (!election) return null;
+    if (!row) return null;
     
-    return this.getElectionResults(election.id);
+    return this.getElectionResults(row.id);
   }
 }
 

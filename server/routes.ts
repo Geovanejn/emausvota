@@ -225,6 +225,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/results/latest", async (req, res) => {
+    try {
+      const results = storage.getLatestElectionResults();
+      res.json(results);
+    } catch (error) {
+      console.error("Get latest results error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar resultados" 
+      });
+    }
+  });
+
   app.get("/api/results/:electionId", authenticateToken, async (req: AuthRequest, res) => {
     try {
       const electionId = parseInt(req.params.electionId);
@@ -237,18 +249,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(results);
     } catch (error) {
       console.error("Get results error:", error);
-      res.status(500).json({ 
-        message: error instanceof Error ? error.message : "Erro ao buscar resultados" 
-      });
-    }
-  });
-
-  app.get("/api/results/latest", async (req, res) => {
-    try {
-      const results = storage.getLatestElectionResults();
-      res.json(results);
-    } catch (error) {
-      console.error("Get latest results error:", error);
       res.status(500).json({ 
         message: error instanceof Error ? error.message : "Erro ao buscar resultados" 
       });
