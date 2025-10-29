@@ -85,7 +85,37 @@ export const insertVoteSchema = createInsertSchema(votes).omit({
 export type InsertVote = z.infer<typeof insertVoteSchema>;
 export type Vote = typeof votes.$inferSelect;
 
+// Verification Codes table
+export const verificationCodes = sqliteTable("verification_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull(),
+  code: text("code").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+export const insertVerificationCodeSchema = createInsertSchema(verificationCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertVerificationCode = z.infer<typeof insertVerificationCodeSchema>;
+export type VerificationCode = typeof verificationCodes.$inferSelect;
+
 // Auth schemas
+export const requestCodeSchema = z.object({
+  email: z.string().email("Email inválido"),
+});
+
+export type RequestCodeData = z.infer<typeof requestCodeSchema>;
+
+export const verifyCodeSchema = z.object({
+  email: z.string().email("Email inválido"),
+  code: z.string().length(6, "Código deve ter 6 dígitos"),
+});
+
+export type VerifyCodeData = z.infer<typeof verifyCodeSchema>;
+
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
@@ -98,6 +128,13 @@ export const registerSchema = loginSchema.extend({
 });
 
 export type RegisterData = z.infer<typeof registerSchema>;
+
+export const addMemberSchema = z.object({
+  fullName: z.string().min(2, "Nome completo é obrigatório"),
+  email: z.string().email("Email inválido"),
+});
+
+export type AddMemberData = z.infer<typeof addMemberSchema>;
 
 // Response types
 export type AuthResponse = {
