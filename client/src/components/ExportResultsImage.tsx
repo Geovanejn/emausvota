@@ -1,6 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
-import logoUrl from "@assets/EMAÚS_20251029_101216_0000_1761743724321.png";
+import backgroundUrl from "@assets/fundo_1761781968067.png";
+import logoUrl from "@assets/2_1761782065893.png";
 
 interface Winner {
   positionId: number;
@@ -59,7 +60,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
 
         try {
           const canvas = await html2canvas(imageRef.current, {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: null,
             scale: 2,
             logging: false,
             width: dimensions.width,
@@ -90,27 +91,83 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
     const WinnerCard = ({ winner }: { winner: Winner }) => (
       <div
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          position: "relative",
           backgroundColor: "#FFFFFF",
-          borderRadius: "16px",
-          padding: is916 ? "32px 24px" : "28px 20px",
-          boxShadow: "0 8px 24px rgba(255, 165, 0, 0.15)",
-          border: "2px solid #FFF7E6",
-          gap: is916 ? "20px" : "16px",
+          borderRadius: "24px",
+          overflow: "visible",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         }}
       >
-        {/* Photo */}
+        {/* Yellow header with position name */}
         <div
           style={{
+            backgroundColor: "#FFD84B",
+            padding: is916 ? "16px 20px" : "14px 18px",
+            borderRadius: "24px 24px 0 0",
+            textAlign: "center",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: is916 ? "22px" : "20px",
+              fontWeight: "800",
+              fontStyle: "italic",
+              color: "#1A1A1A",
+              margin: 0,
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
+          >
+            {winner.positionName}
+          </h3>
+        </div>
+
+        {/* White body with name and vote details */}
+        <div
+          style={{
+            padding: is916 ? "24px 20px 70px 20px" : "20px 18px 60px 18px",
+            textAlign: "center",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: is916 ? "26px" : "22px",
+              fontWeight: "800",
+              color: "#1A1A1A",
+              margin: 0,
+              marginBottom: is916 ? "12px" : "10px",
+              textTransform: "uppercase",
+              lineHeight: "1.2",
+            }}
+          >
+            {winner.candidateName}
+          </h2>
+          <p
+            style={{
+              fontSize: is916 ? "16px" : "14px",
+              color: "#4A4A4A",
+              margin: 0,
+              fontWeight: "500",
+            }}
+          >
+            {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
+          </p>
+        </div>
+
+        {/* Photo overlapping bottom of card */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: is916 ? "-40px" : "-35px",
+            left: "50%",
+            transform: "translateX(-50%)",
             width: is916 ? "120px" : "100px",
             height: is916 ? "120px" : "100px",
             borderRadius: "50%",
-            backgroundColor: "#FFF7E6",
+            backgroundColor: "#F5F5F5",
             overflow: "hidden",
-            border: "4px solid #FFA500",
-            boxShadow: "0 4px 12px rgba(255, 165, 0, 0.3)",
+            border: "4px solid #FFFFFF",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
           }}
         >
           {winner.photoUrl ? (
@@ -133,58 +190,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 justifyContent: "center",
                 fontSize: is916 ? "40px" : "34px",
                 fontWeight: "800",
-                color: "#FFA500",
-                backgroundColor: "#FFF7E6",
+                color: "#999999",
+                backgroundColor: "#F5F5F5",
               }}
             >
               {winner.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
           )}
         </div>
-
-        {/* Position badge */}
-        <div
-          style={{
-            backgroundColor: "#FFA500",
-            color: "#FFFFFF",
-            padding: is916 ? "8px 24px" : "6px 20px",
-            borderRadius: "20px",
-            fontSize: is916 ? "16px" : "14px",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "0.5px",
-          }}
-        >
-          {winner.positionName}
-        </div>
-
-        {/* Name */}
-        <h3
-          style={{
-            fontSize: is916 ? "24px" : "20px",
-            fontWeight: "800",
-            color: "#1A1A1A",
-            margin: 0,
-            textAlign: "center",
-            textTransform: "uppercase",
-            lineHeight: "1.2",
-          }}
-        >
-          {winner.candidateName}
-        </h3>
-
-        {/* Vote details */}
-        <p
-          style={{
-            fontSize: is916 ? "14px" : "12px",
-            color: "#666666",
-            margin: 0,
-            textAlign: "center",
-            fontWeight: "500",
-          }}
-        >
-          {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
-        </p>
       </div>
     );
 
@@ -195,7 +208,9 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           style={{
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,
-            backgroundColor: "#FFFFFF",
+            backgroundImage: `url(${backgroundUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
             padding: is916 ? "60px 50px" : "50px 40px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
@@ -240,12 +255,12 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             </p>
           </div>
 
-          {/* Winners Grid */}
+          {/* Winners Grid with extra bottom margin for overlapping photos */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: is916 ? "1fr 1fr" : "1fr 1fr",
-              gap: is916 ? "24px" : "20px",
+              gap: is916 ? "70px 24px" : "60px 20px",
               flex: 1,
             }}
           >
@@ -269,14 +284,13 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               alignItems: "center",
               gap: is916 ? "24px" : "20px",
               paddingTop: is916 ? "20px" : "16px",
-              borderTop: "2px solid #FFF7E6",
             }}
           >
             {/* Scripture */}
             <p
               style={{
                 fontSize: is916 ? "16px" : "14px",
-                color: "#666666",
+                color: "#4A4A4A",
                 textAlign: "center",
                 fontStyle: "italic",
                 margin: 0,
@@ -289,12 +303,12 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               <span style={{ fontWeight: "600", color: "#FFA500" }}>1 Coríntios 3:9</span>
             </p>
 
-            {/* Logo */}
+            {/* Logo - BIGGER */}
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                height: is916 ? "60px" : "50px",
+                height: is916 ? "100px" : "80px",
                 objectFit: "contain",
               }}
             />

@@ -46,18 +46,16 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
 - ✅ **Share results button** - Export election results as professional, institutional image with winners, votes, UMP logo and scripture verse
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
-- ✅ **Modern clean design with UMP Emaús branding:**
-  - White background (#FFFFFF) with clean layout
-  - Gradient header: linear-gradient(135deg, #FFA500 to #FFD700) with rounded corners
-  - Title: "Eleição [YEAR]" white text with shadow, subtitle "UMP Emaús - Resultados Oficiais"
-  - Card design: Centered vertical layout (photo → badge → name → details)
-  - Large circular photos (120px Stories / 100px Feed) with orange border
-  - Orange badge for position name (#FFA500 background, white text)
-  - Clean typography: bold uppercase names, subtle vote details
-  - 2x2 + 1 grid layout with Tesoureiro centered full-width
-  - Orange-tinted shadows (rgba(255,165,0,0.15)) for depth
-  - Footer: Italic scripture quote + centered logo
-  - Border: 2px solid #FFF7E6 on cards for subtle definition
+- ✅ **Custom design with user-provided assets:**
+  - Background: Light gray textured background (user-provided image)
+  - Gradient header: linear-gradient(135deg, #FFA500 to #FFD700) with title "Eleição [YEAR]"
+  - Cards: Yellow header (#FFD84B) with position name in italic bold black
+  - Card body: White background with candidate name (uppercase bold) and vote details
+  - Photo: Circular 120px (Stories) / 100px (Feed) overlapping bottom of card with white border
+  - 2x2 + 1 grid layout (70px/60px row gap for overlapping photos)
+  - Footer: Scripture verse in italic + large UMP Emaús logo (100px Stories / 80px Feed)
+  - Typography: System fonts with bold weights for emphasis
+  - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 
