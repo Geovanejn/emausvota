@@ -1,0 +1,173 @@
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartBar, LogOut, Trophy, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
+import type { ElectionResults } from "@shared/schema";
+
+export default function ResultsPage() {
+  const { user, logout, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const { data: results, isLoading } = useQuery<ElectionResults | null>({
+    queryKey: ["/api/results/latest"],
+  });
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/");
+  };
+
+  const handleBack = () => {
+    if (user?.isAdmin) {
+      setLocation("/admin");
+    } else {
+      setLocation("/vote");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando resultados...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="h-2 bg-primary w-full" />
+      
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+              <ChartBar className="w-8 h-8" />
+              Resultados da Eleição
+            </h1>
+            {results && (
+              <p className="text-muted-foreground mt-1">{results.electionName}</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {isAuthenticated && (
+              <Button variant="outline" onClick={handleBack} data-testid="button-back">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!results ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Nenhum resultado disponível</CardTitle>
+              <CardDescription>
+                Não há eleições finalizadas para exibir resultados
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <div className="space-y-12">
+            {results.positions.map((position) => {
+              const sortedCandidates = [...position.candidates].sort(
+                (a, b) => b.voteCount - a.voteCount
+              );
+              const winner = sortedCandidates[0];
+              const totalVotes = sortedCandidates.reduce((sum, c) => sum + c.voteCount, 0);
+
+              return (
+                <div key={position.positionId} data-testid={`position-${position.positionId}`}>
+                  <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    {position.positionName}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      ({totalVotes} votos)
+                    </span>
+                  </h2>
+
+                  <div className="space-y-3">
+                    {sortedCandidates.map((candidate, index) => {
+                      const isWinner = index === 0 && candidate.voteCount > 0;
+                      const percentage = totalVotes > 0 
+                        ? ((candidate.voteCount / totalVotes) * 100).toFixed(1) 
+                        : "0.0";
+
+                      return (
+                        <Card
+                          key={candidate.candidateId}
+                          className={
+                            isWinner
+                              ? "bg-amber-50 dark:bg-amber-950/30 border-l-4 border-l-primary shadow-md"
+                              : "border-border"
+                          }
+                          data-testid={`candidate-result-${candidate.candidateId}`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {isWinner && (
+                                  <Trophy className="w-6 h-6 text-primary" />
+                                )}
+                                <div>
+                                  <p className="font-medium text-lg">
+                                    {candidate.candidateName}
+                                  </p>
+                                  {isWinner && (
+                                    <p className="text-sm text-primary font-medium">
+                                      Vencedor
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold" data-testid={`vote-count-${candidate.candidateId}`}>
+                                  {candidate.voteCount}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {percentage}%
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 bg-muted/30 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-primary h-full transition-all duration-500 rounded-full"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <Card className="bg-muted/30 border-muted">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-3">
+                  <ChartBar className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium mb-1">Resultados finais</p>
+                    <p className="text-sm text-muted-foreground">
+                      Estes são os resultados oficiais da eleição. Todos os votos foram contabilizados de forma segura e transparente.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
