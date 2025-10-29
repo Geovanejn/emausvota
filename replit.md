@@ -2,7 +2,7 @@
 
 ## Overview
 
-Emaús Vota is a full-stack web application designed to manage elections for a church youth group (UMP Emaús). The system provides secure authentication, role-based access control (admin/member), election management, and voting functionality with real-time results. Built with a focus on trust, transparency, and accessibility, it follows civic tech design principles to ensure clarity during the voting process.
+Emaús Vota is a full-stack web application designed to manage elections for a church youth group (UMP Emaús). The system provides email-based authentication with verification codes, role-based access control (admin/member), election management, and voting functionality with real-time results. Built with a focus on trust, transparency, and accessibility, it follows civic tech design principles to ensure clarity during the voting process.
 
 ## User Preferences
 
@@ -11,21 +11,27 @@ Preferred communication style: Simple, everyday language.
 ## Project Status
 
 **✅ Fully implemented and tested**
-- Complete authentication system with JWT and bcrypt password hashing
+- Email-based authentication with 6-digit verification codes (15-minute validity)
+- JWT token-based session management
 - Role-based access control (admin/member) with auth-gated routing
 - Election management (create, close elections)
 - Candidate registration system
 - Secure voting with duplicate prevention (one vote per position per election)
-- Real-time results display
+- Real-time results display with vote counts and percentages
+- Admin panel for member registration
 - Session persistence with automatic hydration
 - Responsive UI following civic tech design principles
-- All browser console errors resolved
+- Portuguese language interface
 
 **Recent Changes (October 29, 2025)**
-- Fixed critical infinite loop issue by implementing separate route trees for different auth states
-- Removed dynamic redirects in favor of conditional route rendering
-- Cleaned up unused ProtectedRoute component
-- Verified all authentication flows work correctly with session persistence
+- ✅ Implemented email-based authentication with verification codes
+- ✅ Removed public registration - only admin can add members
+- ✅ Added verification_codes table to database
+- ✅ Updated login page to two-step flow (email → code)
+- ✅ Fixed election results display bug (route ordering)
+- ✅ Results now show vote counts and sort candidates by votes (descending)
+- ✅ Updated position names to Portuguese (Presidente, Vice-Presidente, etc.)
+- ✅ Admin can now register members with just name and email
 
 ## System Architecture
 
@@ -69,20 +75,23 @@ Preferred communication style: Simple, everyday language.
 - Custom middleware for request logging and authentication
 
 **Authentication & Authorization**
+- **Email-based authentication** with 6-digit verification codes
 - **JWT (JSON Web Tokens)** for stateless authentication
-- **bcrypt.js** for password hashing
+- **bcrypt.js** for admin password hashing (legacy, admin only)
+- Verification codes expire after 15 minutes
 - Token-based auth with 7-day expiration
 - Role-based access control with `isAdmin` and `isMember` flags
 - Middleware functions: `authenticateToken`, `requireAdmin`, `requireMember`
 
 **API Design**
 - RESTful endpoints organized by domain:
-  - `/api/auth/*` - Authentication (login, register)
+  - `/api/auth/*` - Authentication (login with password for admin, request-code, verify-code)
+  - `/api/admin/*` - Admin operations (add members)
   - `/api/elections/*` - Election management
   - `/api/candidates/*` - Candidate management
-  - `/api/positions/*` - Fixed position retrieval
+  - `/api/positions/*` - Fixed position retrieval (Portuguese names)
   - `/api/vote` - Vote submission
-  - `/api/results/*` - Election results
+  - `/api/results/*` - Election results with vote counts
 
 **Database Layer**
 - **Better-SQLite3** for local SQLite database
@@ -91,12 +100,13 @@ Preferred communication style: Simple, everyday language.
 - Foreign key constraints enforced at database level
 
 **Database Schema**
-Five main tables with relational integrity:
+Six main tables with relational integrity:
 1. **users** - Authentication and role management
-2. **positions** - Fixed leadership positions (President, Vice-President, Secretaries, Treasurer)
+2. **positions** - Fixed leadership positions (Presidente, Vice-Presidente, 1º Secretário, 2º Secretário, Tesoureiro)
 3. **elections** - Election instances with active/closed states
 4. **candidates** - Links candidates to positions and elections
 5. **votes** - Records votes with voter, candidate, position, and election tracking
+6. **verification_codes** - Temporary email verification codes (15-minute expiry)
 
 **Business Logic Constraints**
 - One active election at a time

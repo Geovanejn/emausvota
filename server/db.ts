@@ -74,11 +74,11 @@ export function initializeDatabase() {
   `);
 
   const fixedPositions = [
-    "President",
-    "Vice-President", 
-    "1st Secretary",
-    "2nd Secretary",
-    "Treasurer"
+    "Presidente",
+    "Vice-Presidente", 
+    "1º Secretário",
+    "2º Secretário",
+    "Tesoureiro"
   ];
 
   const existingPositions = sqlite.prepare("SELECT COUNT(*) as count FROM positions").get() as { count: number };
