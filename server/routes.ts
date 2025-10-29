@@ -675,6 +675,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/elections/:electionId/winners", async (req, res) => {
+    try {
+      const electionId = parseInt(req.params.electionId);
+      const winners = storage.getElectionWinners(electionId);
+      const results = storage.getElectionResults(electionId);
+      
+      if (!results) {
+        return res.status(404).json({ message: "Eleição não encontrada" });
+      }
+      
+      // Get position, user details, and vote count for each winner
+      const formattedWinners = winners.map(w => {
+        const user = storage.getUserById(w.userId);
+        const positions = storage.getAllPositions();
+        const position = positions.find(p => p.id === w.positionId);
+        
+        // Find vote count from results
+        const positionResults = results.positions.find(p => p.positionId === w.positionId);
+        const candidateResults = positionResults?.candidates.find(c => c.candidateId === w.candidateId);
+        
+        return {
+          positionId: w.positionId,
+          positionName: position?.name || '',
+          candidateName: user?.fullName || '',
+          photoUrl: user?.email ? getGravatarUrl(user.email) : undefined,
+          voteCount: candidateResults?.voteCount || 0,
+          wonAtScrutiny: w.wonAtScrutiny
+        };
+      });
+
+      res.json(formattedWinners);
+    } catch (error) {
+      console.error("Get winners error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar vencedores" 
+      });
+    }
+  });
+
   app.patch("/api/elections/:id/advance-scrutiny", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const electionId = parseInt(req.params.id);

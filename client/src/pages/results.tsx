@@ -3,13 +3,25 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ChartBar, LogOut, Trophy, ArrowLeft } from "lucide-react";
+import { ChartBar, LogOut, Trophy, ArrowLeft, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useRef } from "react";
 import type { ElectionResults } from "@shared/schema";
+import ExportResultsImage, { type ExportResultsImageHandle } from "@/components/ExportResultsImage";
+
+interface Winner {
+  positionId: number;
+  positionName: string;
+  candidateName: string;
+  photoUrl?: string;
+  voteCount: number;
+  wonAtScrutiny: number;
+}
 
 export default function ResultsPage() {
   const { user, logout, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const exportRef = useRef<ExportResultsImageHandle>(null);
   
   // Get electionId from query string
   const searchParams = new URLSearchParams(window.location.search);
@@ -25,6 +37,23 @@ export default function ResultsPage() {
         }
       : undefined,
   });
+
+  const { data: winners } = useQuery<Winner[]>({
+    queryKey: results?.electionId ? ["/api/elections", results.electionId, "winners"] : [],
+    queryFn: async () => {
+      if (!results?.electionId) return [];
+      const response = await fetch(`/api/elections/${results.electionId}/winners`);
+      if (!response.ok) throw new Error('Failed to fetch winners');
+      return response.json();
+    },
+    enabled: !!results?.electionId && !results?.isActive,
+  });
+
+  const handleExportImage = async () => {
+    if (exportRef.current) {
+      await exportRef.current.exportImage();
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -70,6 +99,19 @@ export default function ResultsPage() {
             )}
           </div>
           <div className="flex gap-2 self-end sm:self-auto">
+            {!results?.isActive && winners && winners.length > 0 && (
+              <Button 
+                variant="default" 
+                onClick={handleExportImage} 
+                data-testid="button-export-results" 
+                size="sm" 
+                className="sm:h-9"
+                aria-label="Compartilhar Resultados"
+              >
+                <Share2 className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Compartilhar</span>
+              </Button>
+            )}
             {isAuthenticated && (
               <Button 
                 variant="outline" 
@@ -222,6 +264,15 @@ export default function ResultsPage() {
           </div>
         )}
       </div>
+
+      {/* Hidden export component */}
+      {!results?.isActive && winners && winners.length > 0 && (
+        <ExportResultsImage
+          ref={exportRef}
+          electionTitle={results?.electionName || ''}
+          winners={winners}
+        />
+      )}
     </div>
   );
 }

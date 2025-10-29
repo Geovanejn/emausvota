@@ -227,6 +227,8 @@ export type PositionWithCandidates = Position & {
 export type ElectionResults = {
   electionId: number;
   electionName: string;
+  isActive: boolean;
+  currentScrutiny: number;
   presentCount: number; // Number of members present
   positions: Array<{
     positionId: number;
@@ -247,6 +249,7 @@ export type ElectionResults = {
       voteCount: number;
       isElected: boolean;
       electedInScrutiny?: number; // 1, 2, or 3
+      wonAtScrutiny?: number; // Alias for electedInScrutiny
     }>;
   }>;
 };
