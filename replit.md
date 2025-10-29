@@ -40,6 +40,10 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Per-position tie resolution** - admin can resolve ties independently for each position on third round
 - ✅ **Admin candidate validation** - admins are prevented from being candidates
 - ✅ **Election winners table** - separate table tracks winners per position for independent tie resolution
+- ✅ **Single admin restriction** - Only marketingumpemaus@gmail.com can access admin panel
+- ✅ **Election finalization** - Admin can finalize completed elections to archive them in history
+- ✅ **Election history** - New "Histórico" tab shows archived elections with navigation to results
+- ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
 
 ## System Architecture
 
@@ -112,7 +116,7 @@ Preferred communication style: Simple, everyday language.
 Seven main tables with relational integrity:
 1. **users** - Authentication and role management (with Gravatar photo support via email MD5 hash)
 2. **positions** - Fixed leadership positions (Presidente, Vice-Presidente, 1º Secretário, 2º Secretário, Tesoureiro)
-3. **elections** - Election instances with active/closed states and current scrutiny round (1-3)
+3. **elections** - Election instances with active/closed states, current scrutiny round (1-3), and closedAt timestamp for archival
 4. **candidates** - Links candidates to positions and elections (admins cannot be candidates)
 5. **votes** - Records votes with voter, candidate, position, election, and scrutiny round tracking
 6. **verification_codes** - Temporary email verification codes (15-minute expiry)
