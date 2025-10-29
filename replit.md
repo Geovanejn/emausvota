@@ -46,19 +46,21 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
 - ✅ **Share results button** - Export election results as professional, institutional image with winners, votes, UMP logo and scripture verse
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
-- ✅ **Canva-inspired design (replicated exactly):**
-  - Light gray background (#E5E5E5) with white cards (#FFFFFF)
-  - Yellow tags (#FFD700) INTEGRATED at top of card (borderRadius 20px 20px 0 0)
-  - Title: "ELEIÇÃO" bold + year outline style (WebkitTextStroke)
-  - Card layout: Yellow tag integrated → Photo LEFT + Text RIGHT (horizontal)
-  - 2x2 + 1 grid layout (Presidente/Vice | Secretários | Tesoureiro centered)
-  - Large circular photos (140px Stories / 120px Feed) with white border 4px
-  - Rounded white cards (20px radius) with subtle shadow
-  - Watermark "ELEIÇÃO" extremely subtle (opacity 0.015)
-  - Scripture in italic at bottom, logo centered
-- ✅ **Optimized layouts per format:**
-  - **9:16 (Stories):** 2-column grid, 920px max-width, 32x20px gaps, 140px photos, 80px logo
-  - **4:5 (Feed):** 2-column grid, full-width, 26x18px gaps, 120px photos, 70px logo
+- ✅ **Canva-inspired design (replicated exactly with pixel-perfect specs):**
+  - Background: #F9F9F9 (light gray)
+  - Cards: #FFFFFF with 20px borderRadius, shadow 0 4px 8px rgba(0,0,0,0.08)
+  - Yellow header: #FFD84B (integrated at top with borderRadius 20px 20px 0 0)
+  - Title: "ELEIÇÃO" bold + first year outline (WebkitTextStroke 3px)
+  - **Photo OVERLAPPING bottom-right corner** of card (position absolute)
+  - 2x2 + 1 absolute positioned layout with exact Canva coordinates
+  - Typography: Poppins (cards), Montserrat (title), Lato Italic (scripture)
+  - Colors: #1C1C1C (name), #4A4A4A (votes), #3A3A3A (scripture), #F7B731 (fallback)
+  - Watermark "ELEIÇÃO" rotated -12deg, opacity 0.015, color #F0F0F0
+- ✅ **Exact specifications per format:**
+  - **9:16 (Stories - 1080x1920):** Cards 440x160px, header 50px, photo 110px (offset 30px), title 150px, cargo 26px, name 22px, votes 18px, verse 22px, logo 90px
+  - **4:5 (Feed - 1080x1350):** Cards 420x150px, header 45px, photo 100px (offset 25px), title 130px, cargo 24px, name 20px, votes 16px, verse 20px, logo 80px
+  - **Absolute positioning:** Stories positions - Presidente (150,530), Vice (590,530), 1ºSec (150,760), 2ºSec (590,760), Tesoureiro (370,1010)
+  - **Absolute positioning:** Feed positions - Presidente (160,440), Vice (600,440), 1ºSec (160,660), 2ºSec (600,660), Tesoureiro (380,870)
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 
