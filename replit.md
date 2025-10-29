@@ -48,17 +48,17 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
 - ✅ **Canva-inspired design (replicated exactly):**
   - Light gray background (#E5E5E5) with white cards (#FFFFFF)
-  - Yellow tags (#FFD700) on top of each card with position name in italic bold
-  - Title: "ELEIÇÃO" bold + year outline style
-  - Card layout: Yellow tag → Name → Details → Photo at bottom (circular)
+  - Yellow tags (#FFD700) INTEGRATED at top of card (borderRadius 20px 20px 0 0)
+  - Title: "ELEIÇÃO" bold + year outline style (WebkitTextStroke)
+  - Card layout: Yellow tag integrated → Photo LEFT + Text RIGHT (horizontal)
   - 2x2 + 1 grid layout (Presidente/Vice | Secretários | Tesoureiro centered)
-  - Photo positioned BELOW name (not beside), centered in card
-  - Rounded white cards (20px radius) with shadow
-  - Circular photos with white border and shadow
+  - Large circular photos (140px Stories / 120px Feed) with white border 4px
+  - Rounded white cards (20px radius) with subtle shadow
+  - Watermark "ELEIÇÃO" extremely subtle (opacity 0.015)
   - Scripture in italic at bottom, logo centered
 - ✅ **Optimized layouts per format:**
-  - **9:16 (Stories):** 2-column grid, 900px max-width, 36x24px gaps, 100px photos, 80px logo
-  - **4:5 (Feed):** 2-column grid, full-width, 28x20px gaps, 85px photos, 70px logo
+  - **9:16 (Stories):** 2-column grid, 920px max-width, 32x20px gaps, 140px photos, 80px logo
+  - **4:5 (Feed):** 2-column grid, full-width, 26x18px gaps, 120px photos, 70px logo
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 

@@ -90,113 +90,115 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
     const WinnerCard = ({ winner }: { winner: Winner }) => (
       <div
         style={{
-          position: "relative",
           display: "flex",
-          alignItems: "center",
-          gap: is916 ? "16px" : "12px",
+          flexDirection: "column",
           backgroundColor: "#FFFFFF",
           borderRadius: "20px",
-          padding: is916 ? "20px 16px" : "16px 12px",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          minHeight: is916 ? "120px" : "100px",
+          overflow: "hidden",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
         }}
       >
-        {/* Yellow tag on top */}
+        {/* Yellow tag on top - ATTACHED to card, not floating */}
         <div
           style={{
-            position: "absolute",
-            top: "-16px",
-            left: "50%",
-            transform: "translateX(-50%)",
             backgroundColor: "#FFD700",
-            borderRadius: "20px",
-            padding: is916 ? "8px 32px" : "6px 24px",
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
+            borderRadius: "20px 20px 0 0",
+            padding: is916 ? "12px 24px" : "10px 20px",
+            textAlign: "center",
           }}
         >
           <p
             style={{
-              fontSize: is916 ? "18px" : "15px",
+              fontSize: is916 ? "22px" : "18px",
               fontWeight: "700",
               fontStyle: "italic",
               color: "#000000",
               margin: 0,
               textTransform: "uppercase",
-              whiteSpace: "nowrap",
             }}
           >
             {winner.positionName}
           </p>
         </div>
 
-        {/* Photo on the left */}
+        {/* Card content with photo and text */}
         <div
           style={{
-            width: is916 ? "90px" : "75px",
-            height: is916 ? "90px" : "75px",
-            borderRadius: "50%",
-            backgroundColor: "#E8E8E8",
-            overflow: "hidden",
-            flexShrink: 0,
-            border: "3px solid #FFFFFF",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.15)",
+            display: "flex",
+            alignItems: "center",
+            gap: is916 ? "20px" : "16px",
+            padding: is916 ? "24px" : "20px",
           }}
         >
-          {winner.photoUrl ? (
-            <img
-              src={winner.photoUrl}
-              alt={winner.candidateName}
+          {/* Photo on the left - MUCH BIGGER */}
+          <div
+            style={{
+              width: is916 ? "140px" : "120px",
+              height: is916 ? "140px" : "120px",
+              borderRadius: "50%",
+              backgroundColor: "#E8E8E8",
+              overflow: "hidden",
+              flexShrink: 0,
+              border: "4px solid #FFFFFF",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            }}
+          >
+            {winner.photoUrl ? (
+              <img
+                src={winner.photoUrl}
+                alt={winner.candidateName}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: is916 ? "42px" : "36px",
+                  fontWeight: "700",
+                  color: "#FFA500",
+                  backgroundColor: "#FFF7E6",
+                }}
+              >
+                {winner.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          {/* Text content on the right */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p
               style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: is916 ? "28px" : "24px",
+                fontSize: is916 ? "26px" : "22px",
                 fontWeight: "700",
-                color: "#FFA500",
-                backgroundColor: "#FFF7E6",
+                color: "#000000",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                lineHeight: "1.2",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              {winner.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
-          )}
-        </div>
-
-        {/* Text content on the right - LEFT ALIGNED */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            style={{
-              fontSize: is916 ? "20px" : "16px",
-              fontWeight: "700",
-              color: "#000000",
-              marginBottom: "6px",
-              textTransform: "uppercase",
-              lineHeight: "1.2",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {winner.candidateName}
-          </p>
-          <p
-            style={{
-              fontSize: is916 ? "13px" : "11px",
-              color: "#000000",
-              fontWeight: "400",
-            }}
-          >
-            {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
-          </p>
+              {winner.candidateName}
+            </p>
+            <p
+              style={{
+                fontSize: is916 ? "16px" : "14px",
+                color: "#000000",
+                fontWeight: "400",
+              }}
+            >
+              {winner.voteCount} votos • Eleito no {getScrutinyLabel(winner.wonAtScrutiny)} Escrutínio
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -218,7 +220,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             overflow: "hidden",
           }}
         >
-          {/* Background watermark pattern */}
+          {/* Background watermark pattern - VERY SUBTLE */}
           <div
             style={{
               position: "absolute",
@@ -226,20 +228,20 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               left: 0,
               right: 0,
               bottom: 0,
-              opacity: 0.03,
-              fontSize: is916 ? "180px" : "150px",
+              opacity: 0.015,
+              fontSize: is916 ? "200px" : "170px",
               fontWeight: "900",
               color: "#000000",
               display: "flex",
               flexWrap: "wrap",
               alignContent: "flex-start",
-              gap: is916 ? "40px" : "30px",
-              padding: is916 ? "100px 20px" : "80px 20px",
-              transform: "rotate(-15deg)",
+              gap: is916 ? "60px" : "50px",
+              padding: is916 ? "120px 30px" : "100px 20px",
+              transform: "rotate(-12deg)",
               zIndex: 0,
             }}
           >
-            {Array.from({ length: 20 }).map((_, i) => (
+            {Array.from({ length: 25 }).map((_, i) => (
               <span key={i} style={{ whiteSpace: "nowrap" }}>ELEIÇÃO</span>
             ))}
           </div>
@@ -249,13 +251,13 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             {/* Title */}
             <h1
               style={{
-                fontSize: is916 ? "80px" : "68px",
+                fontSize: is916 ? "86px" : "72px",
                 fontWeight: "800",
                 color: "#000000",
                 textAlign: "center",
-                marginBottom: is916 ? "60px" : "40px",
+                marginBottom: is916 ? "60px" : "45px",
                 lineHeight: "1",
-                letterSpacing: "-1px",
+                letterSpacing: "-1.5px",
               }}
             >
               <span style={{ fontWeight: "800" }}>ELEIÇÃO</span>{" "}
@@ -263,7 +265,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 style={{
                   fontWeight: "800",
                   color: "transparent",
-                  WebkitTextStroke: "2px #000000",
+                  WebkitTextStroke: "3px #000000",
                 }}
               >
                 {year}
@@ -275,8 +277,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: is916 ? "36px 24px" : "28px 20px",
-                maxWidth: is916 ? "900px" : "100%",
+                gap: is916 ? "32px 20px" : "26px 18px",
+                maxWidth: is916 ? "920px" : "100%",
                 margin: "0 auto",
               }}
             >
@@ -290,7 +292,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               
               {/* Row 3: Tesoureiro - centered, spans 2 columns */}
               {sortedWinners[4] && (
-                <div style={{ gridColumn: "1 / -1", maxWidth: is916 ? "440px" : "400px", margin: "0 auto", width: "100%" }}>
+                <div style={{ gridColumn: "1 / -1", maxWidth: is916 ? "460px" : "420px", margin: "0 auto", width: "100%" }}>
                   <WinnerCard winner={sortedWinners[4]} />
                 </div>
               )}
