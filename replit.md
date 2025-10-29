@@ -44,11 +44,18 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Election finalization** - Admin can finalize completed elections to archive them in history
 - ✅ **Election history** - New "Histórico" tab shows archived elections with navigation to results
 - ✅ **Historical results viewing** - Results page accepts electionId parameter to display past elections
-- ✅ **Share results button** - Export election results as image with winners, votes, UMP logo and scripture verse
-- ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 5:4 (Feed - 1080x864) aspect ratios
+- ✅ **Share results button** - Export election results as professional, institutional image with winners, votes, UMP logo and scripture verse
+- ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
+- ✅ **Modern institutional design:**
+  - Clean white background (#FFFFFF) with light gray cards (#F9F9F9)
+  - Orange (#FFA500) and yellow (#FFD166) accents for highlights
+  - Professional sans-serif typography with bold weights
+  - Subtle shadows (0 2px 8px rgba(0,0,0,0.08)) and rounded corners (12px)
+  - Bordered circular photos with white ring and shadow
+  - Uppercase position labels with letter spacing
 - ✅ **Optimized layouts per format:**
-  - **9:16 (Stories):** Centered single column (max 760px), logo 200px, cards 32px gap, optimized for vertical viewing
-  - **5:4 (Feed):** 2-column grid layout (2-2-1), 5th position centered, logo 160px, compact spacing to fit all content
+  - **9:16 (Stories):** Centered vertical cards (max 780px), logo 220px, 24px gaps, perfect for Instagram/Facebook Stories
+  - **4:5 (Feed):** Full-width horizontal cards, logo 180px, 20px gaps, ideal for Instagram/Facebook Feed posts
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
 

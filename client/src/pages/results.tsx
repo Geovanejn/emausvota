@@ -147,13 +147,13 @@ export default function ResultsPage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => {
-                      setAspectRatio("5:4");
+                      setAspectRatio("4:5");
                       setTimeout(() => handleExportImage(), 100);
                     }}
-                    data-testid="menu-export-5-4"
+                    data-testid="menu-export-4-5"
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium">5:4 (Feed)</span>
+                      <span className="font-medium">4:5 (Feed)</span>
                       <span className="text-xs text-muted-foreground">Instagram/Facebook Feed</span>
                     </div>
                   </DropdownMenuItem>
