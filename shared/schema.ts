@@ -48,7 +48,6 @@ export const elections = sqliteTable("elections", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  currentScrutiny: integer("current_scrutiny").notNull().default(1), // 1, 2, or 3
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
@@ -78,6 +77,47 @@ export const insertElectionWinnerSchema = createInsertSchema(electionWinners).om
 
 export type InsertElectionWinner = z.infer<typeof insertElectionWinnerSchema>;
 export type ElectionWinner = typeof electionWinners.$inferSelect;
+
+// Election Positions table - tracks each position within an election sequentially
+export const electionPositions = sqliteTable("election_positions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  electionId: integer("election_id").notNull().references(() => elections.id),
+  positionId: integer("position_id").notNull().references(() => positions.id),
+  orderIndex: integer("order_index").notNull(), // Order in which positions are voted (0 = first)
+  status: text("status").notNull().default("pending"), // pending, active, completed
+  currentScrutiny: integer("current_scrutiny").notNull().default(1), // 1, 2, or 3
+  openedAt: text("opened_at"),
+  closedAt: text("closed_at"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+export const insertElectionPositionSchema = createInsertSchema(electionPositions).omit({
+  id: true,
+  status: true,
+  currentScrutiny: true,
+  createdAt: true,
+});
+
+export type InsertElectionPosition = z.infer<typeof insertElectionPositionSchema>;
+export type ElectionPosition = typeof electionPositions.$inferSelect;
+
+// Election Attendance table - tracks which members are present for voting
+export const electionAttendance = sqliteTable("election_attendance", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  electionId: integer("election_id").notNull().references(() => elections.id),
+  memberId: integer("member_id").notNull().references(() => users.id),
+  isPresent: integer("is_present", { mode: "boolean" }).notNull().default(false),
+  markedAt: text("marked_at"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+});
+
+export const insertElectionAttendanceSchema = createInsertSchema(electionAttendance).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertElectionAttendance = z.infer<typeof insertElectionAttendanceSchema>;
+export type ElectionAttendance = typeof electionAttendance.$inferSelect;
 
 // Candidates table
 export const candidates = sqliteTable("candidates", {
@@ -186,12 +226,15 @@ export type PositionWithCandidates = Position & {
 export type ElectionResults = {
   electionId: number;
   electionName: string;
-  currentScrutiny: number;
+  presentCount: number; // Number of members present
   positions: Array<{
     positionId: number;
     positionName: string;
+    status: string; // pending, active, completed
+    currentScrutiny: number; // Current scrutiny for this position
+    orderIndex: number; // Order in which position is voted
     totalVoters: number; // Total number of voters in this scrutiny
-    majorityThreshold: number; // Half + 1
+    majorityThreshold: number; // Half + 1 (for scrutiny 1&2) or simple majority (scrutiny 3)
     needsNextScrutiny: boolean; // If no candidate reached majority
     winnerId?: number; // ID of elected candidate (if any)
     winnerScrutiny?: number; // Which scrutiny elected the winner
