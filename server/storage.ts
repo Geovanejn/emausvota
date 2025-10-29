@@ -67,6 +67,7 @@ export interface IStorage {
   
   getElectionResults(electionId: number): ElectionResults | null;
   getLatestElectionResults(): ElectionResults | null;
+  getElectionWinners(electionId: number): Array<{ userId: number; positionId: number; candidateId: number; wonAtScrutiny: number }>;
   
   createVerificationCode(data: InsertVerificationCode): VerificationCode;
   getValidVerificationCode(email: string, code: string): VerificationCode | null;
@@ -660,6 +661,21 @@ export class SQLiteStorage implements IStorage {
     if (!row) return null;
     
     return this.getElectionResults(row.id);
+  }
+
+  getElectionWinners(electionId: number): Array<{ userId: number; positionId: number; candidateId: number; wonAtScrutiny: number }> {
+    const stmt = db.prepare(`
+      SELECT 
+        c.user_id as userId,
+        ew.position_id as positionId,
+        ew.candidate_id as candidateId,
+        ew.won_at_scrutiny as wonAtScrutiny
+      FROM election_winners ew
+      INNER JOIN candidates c ON c.id = ew.candidate_id
+      WHERE ew.election_id = ?
+    `);
+    
+    return stmt.all(electionId) as any[];
   }
 
   createVerificationCode(data: InsertVerificationCode): VerificationCode {

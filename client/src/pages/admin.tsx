@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -30,9 +30,14 @@ import {
   Users,
   ArrowRight,
   CheckCircle2,
+  CheckSquare,
+  Square,
+  UserCheck,
+  Download,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Election, Position, CandidateWithDetails, ElectionResults } from "@shared/schema";
+import ExportResultsImage, { type ExportResultsImageHandle } from "@/components/ExportResultsImage";
 
 export default function AdminPage() {
   const { user, logout } = useAuth();
@@ -41,13 +46,14 @@ export default function AdminPage() {
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [isCreateElectionOpen, setIsCreateElectionOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [selectedElectionPosition, setSelectedElectionPosition] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [newMember, setNewMember] = useState({
     fullName: "",
     email: "",
   });
+  
+  const exportImageRef = useRef<ExportResultsImageHandle>(null);
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
     queryKey: ["/api/elections/active"],
@@ -72,9 +78,67 @@ export default function AdminPage() {
     enabled: isAddCandidateOpen, // Only fetch when dialog is open
   });
 
+  // Winners of current election
+  const { data: electionWinners = [] } = useQuery<Array<{ userId: number; positionId: number; candidateId: number; wonAtScrutiny: number }>>({
+    queryKey: ["/api/elections", activeElection?.id, "winners"],
+    enabled: !!activeElection && isAddCandidateOpen,
+  });
+
+  // Filter out winners from available members
+  const availableMembers = nonAdminMembers.filter(m => 
+    !electionWinners.some(w => w.userId === m.id)
+  );
+
   // Election results for scrutiny management
   const { data: results } = useQuery<ElectionResults | null>({
     queryKey: ["/api/results/latest"],
+    enabled: !!activeElection,
+  });
+
+  // Election positions for sequential voting
+  const { data: electionPositions = [] } = useQuery<Array<{
+    id: number;
+    electionId: number;
+    positionId: number;
+    positionName: string;
+    status: "pending" | "active" | "completed";
+    currentScrutiny: number;
+    orderIndex: number;
+  }>>({
+    queryKey: ["/api/elections", activeElection?.id, "positions"],
+    enabled: !!activeElection,
+  });
+
+  // Active position
+  const { data: activePosition } = useQuery<{
+    id: number;
+    electionId: number;
+    positionId: number;
+    positionName: string;
+    status: "active";
+    currentScrutiny: number;
+    orderIndex: number;
+  } | null>({
+    queryKey: ["/api/elections", activeElection?.id, "positions", "active"],
+    enabled: !!activeElection,
+  });
+
+  // Attendance for current election
+  const { data: attendance = [] } = useQuery<Array<{
+    id: number;
+    electionId: number;
+    memberId: number;
+    memberName: string;
+    memberEmail: string;
+    isPresent: boolean;
+  }>>({
+    queryKey: ["/api/elections", activeElection?.id, "attendance"],
+    enabled: !!activeElection,
+  });
+
+  // Present count
+  const { data: presentCountData } = useQuery<{ presentCount: number }>({
+    queryKey: ["/api/elections", activeElection?.id, "attendance", "count"],
     enabled: !!activeElection,
   });
 
@@ -89,7 +153,6 @@ export default function AdminPage() {
         description: "A nova eleição está ativa agora",
       });
       setIsCreateElectionOpen(false);
-      setSelectedElectionPosition("");
     },
     onError: (error: Error) => {
       toast({
@@ -185,12 +248,50 @@ export default function AdminPage() {
     },
   });
 
-  const advanceScrutinyMutation = useMutation({
+  const initializeAttendanceMutation = useMutation({
     mutationFn: async (electionId: number) => {
-      return await apiRequest("PATCH", `/api/elections/${electionId}/advance-scrutiny`, {});
+      return await apiRequest("POST", `/api/elections/${electionId}/attendance/initialize`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/elections/active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "attendance"] });
+      toast({
+        title: "Lista de presença inicializada!",
+        description: "Todos os membros foram adicionados à lista",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao inicializar presença",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setAttendanceMutation = useMutation({
+    mutationFn: async ({ electionId, memberId, isPresent }: { electionId: number; memberId: number; isPresent: boolean }) => {
+      return await apiRequest("PATCH", `/api/elections/${electionId}/attendance/${memberId}`, { isPresent });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "attendance", "count"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao atualizar presença",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const advanceScrutinyMutation = useMutation({
+    mutationFn: async (electionId: number) => {
+      return await apiRequest("POST", `/api/elections/${electionId}/positions/advance-scrutiny`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions", "active"] });
       queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
       toast({
         title: "Escrutínio avançado!",
@@ -200,6 +301,28 @@ export default function AdminPage() {
     onError: (error: Error) => {
       toast({
         title: "Erro ao avançar escrutínio",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const openNextPositionMutation = useMutation({
+    mutationFn: async (electionId: number) => {
+      return await apiRequest("POST", `/api/elections/${electionId}/positions/open-next`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Próximo cargo aberto!",
+        description: "Votação iniciada para o próximo cargo",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao abrir próximo cargo",
         description: error.message,
         variant: "destructive",
       });
@@ -234,19 +357,28 @@ export default function AdminPage() {
     setLocation("/");
   };
 
-  const handleCreateElection = () => {
-    if (!selectedElectionPosition) {
-      toast({
-        title: "Cargo obrigatório",
-        description: "Selecione o cargo da eleição",
-        variant: "destructive",
-      });
-      return;
+  const handleExportResults = async () => {
+    if (exportImageRef.current) {
+      try {
+        await exportImageRef.current.exportImage();
+        toast({
+          title: "Imagem exportada!",
+          description: "Os resultados foram salvos como imagem",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro ao exportar",
+          description: "Não foi possível gerar a imagem",
+          variant: "destructive",
+        });
+      }
     }
-    const selectedPosition = positions.find(p => p.id === parseInt(selectedElectionPosition));
-    if (!selectedPosition) return;
-    
-    createElectionMutation.mutate(`Eleição ${selectedPosition.name} ${new Date().getFullYear()}`);
+  };
+
+  const handleCreateElection = () => {
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
+    createElectionMutation.mutate(`Eleição ${currentYear}/${nextYear}`);
   };
 
   const handleCloseElection = () => {
@@ -406,82 +538,209 @@ export default function AdminPage() {
               </Card>
             </div>
 
-            {activeElection && results && (
+            {activeElection && (
+              <Card className="border-purple-500">
+                <CardHeader>
+                  <CardTitle className="text-xl">Controle de Presença</CardTitle>
+                  <CardDescription>
+                    Marque os membros presentes antes de iniciar a votação
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {attendance.length === 0 ? (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Inicialize a lista de presença para marcar quem está presente na assembleia
+                        </p>
+                        <Button
+                          className="w-full"
+                          onClick={() => initializeAttendanceMutation.mutate(activeElection.id)}
+                          disabled={initializeAttendanceMutation.isPending}
+                          data-testid="button-initialize-attendance"
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          {initializeAttendanceMutation.isPending ? "Inicializando..." : "Inicializar Lista de Presença"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg">
+                          <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
+                            Presentes: {presentCountData?.presentCount || 0} de {members.length} membros
+                          </p>
+                          <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">
+                            Marque os presentes antes de iniciar a votação
+                          </p>
+                        </div>
+
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {attendance.map((att) => (
+                            <button
+                              key={att.memberId}
+                              onClick={() => setAttendanceMutation.mutate({
+                                electionId: activeElection.id,
+                                memberId: att.memberId,
+                                isPresent: !att.isPresent
+                              })}
+                              className="w-full flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors text-left"
+                              data-testid={`button-toggle-attendance-${att.memberId}`}
+                            >
+                              {att.isPresent ? (
+                                <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
+                              ) : (
+                                <Square className="w-5 h-5 text-muted-foreground shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-medium truncate ${att.isPresent ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                  {att.memberName}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {att.memberEmail}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeElection && results && activePosition && (
               <Card className="border-blue-500">
                 <CardHeader>
-                  <CardTitle className="text-xl">Gerenciamento de Escrutínios</CardTitle>
+                  <CardTitle className="text-xl">Gerenciamento de Votação Sequencial</CardTitle>
                   <CardDescription>
-                    Controle o processo de votação por escrutínios
+                    Controle o processo de votação cargo por cargo
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                       <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                        Escrutínio Atual: {activeElection.currentScrutiny}º
+                        Cargo Ativo: {activePosition.positionName}
                       </p>
                       <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                        {activeElection.currentScrutiny === 3 
-                          ? "Último escrutínio - escolha vencedores em caso de empate"
-                          : "Avance para o próximo escrutínio quando necessário"}
+                        Escrutínio {activePosition.currentScrutiny}º de 3
                       </p>
                     </div>
 
-                    {/* Show positions needing next scrutiny */}
-                    {results.positions.some(p => p.needsNextScrutiny) && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">Cargos que precisam de novo escrutínio:</p>
-                        {results.positions
-                          .filter(p => p.needsNextScrutiny)
-                          .map(position => (
-                            <div 
-                              key={position.positionId}
-                              className="p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg"
-                            >
-                              <p className="font-medium text-amber-900 dark:text-amber-100">
-                                {position.positionName}
+                    {/* Show progress of all positions */}
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Progresso dos Cargos:</p>
+                      {electionPositions.map((pos) => (
+                        <div
+                          key={pos.id}
+                          className={`p-3 border rounded-lg ${
+                            pos.status === "completed"
+                              ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950"
+                              : pos.status === "active"
+                              ? "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950"
+                              : "border-border bg-muted/30"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className={`font-medium ${
+                                pos.status === "active" ? "text-blue-900 dark:text-blue-100" :
+                                pos.status === "completed" ? "text-green-900 dark:text-green-100" :
+                                "text-muted-foreground"
+                              }`}>
+                                {pos.positionName}
                               </p>
-                              <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                                Nenhum candidato atingiu metade+1 dos votos
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {pos.status === "completed" ? "Concluído" :
+                                 pos.status === "active" ? `Escrutínio ${pos.currentScrutiny}º` :
+                                 "Aguardando"}
                               </p>
                             </div>
-                          ))}
-                        
-                        {activeElection.currentScrutiny < 3 && (
-                          <Button
-                            className="w-full"
-                            onClick={() => advanceScrutinyMutation.mutate(activeElection.id)}
-                            disabled={advanceScrutinyMutation.isPending}
-                            data-testid="button-advance-scrutiny"
-                          >
-                            <ArrowRight className="w-4 h-4 mr-2" />
-                            {advanceScrutinyMutation.isPending ? "Avançando..." : `Avançar para ${activeElection.currentScrutiny + 1}º Escrutínio`}
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                            {pos.status === "active" && (
+                              <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            )}
+                            {pos.status === "completed" && (
+                              <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                    {/* Show tied positions in 3rd scrutiny */}
-                    {activeElection.currentScrutiny === 3 && results.positions.some(p => p.isTied) && (
-                      <div className="space-y-3">
-                        <p className="text-sm font-medium">Cargos com empate - escolha o vencedor:</p>
-                        {results.positions
-                          .filter(p => p.isTied)
-                          .map(position => {
-                            const topCandidates = position.candidates
-                              .sort((a, b) => b.voteCount - a.voteCount)
-                              .slice(0, 2);
-                            
-                            return (
-                              <div 
-                                key={position.positionId}
-                                className="p-4 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 rounded-lg"
+                    {/* Show active position result */}
+                    {results.positions
+                      .filter(p => p.positionId === activePosition.positionId)
+                      .map(position => (
+                        <div key={position.positionId}>
+                          {position.needsNextScrutiny && activePosition.currentScrutiny < 3 && (
+                            <div className="space-y-3">
+                              <div className="p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                                  Nenhum candidato atingiu metade+1 dos votos
+                                </p>
+                                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                                  Necessário avançar para o próximo escrutínio
+                                </p>
+                              </div>
+                              <Button
+                                className="w-full"
+                                onClick={() => advanceScrutinyMutation.mutate(activeElection.id)}
+                                disabled={advanceScrutinyMutation.isPending}
+                                data-testid="button-advance-scrutiny"
                               >
-                                <p className="font-medium text-red-900 dark:text-red-100 mb-3">
+                                <ArrowRight className="w-4 h-4 mr-2" />
+                                {advanceScrutinyMutation.isPending ? "Avançando..." : `Avançar para ${activePosition.currentScrutiny + 1}º Escrutínio`}
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Position completed - show button to open next */}
+                          {!position.needsNextScrutiny && !position.isTied && (
+                            <div className="space-y-3">
+                              <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                    Cargo decidido!
+                                  </p>
+                                </div>
+                                {position.winner && (
+                                  <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                                    Vencedor: {position.winner.candidateName}
+                                  </p>
+                                )}
+                              </div>
+                              {electionPositions.some(p => p.status === "pending") && (
+                                <Button
+                                  className="w-full"
+                                  onClick={() => openNextPositionMutation.mutate(activeElection.id)}
+                                  disabled={openNextPositionMutation.isPending}
+                                  data-testid="button-open-next-position"
+                                >
+                                  <ArrowRight className="w-4 h-4 mr-2" />
+                                  {openNextPositionMutation.isPending ? "Abrindo..." : "Abrir Próximo Cargo"}
+                                </Button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Show tied positions in 3rd scrutiny */}
+                          {activePosition.currentScrutiny === 3 && position.isTied && (
+                            <div className="space-y-3">
+                              <div className="p-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 rounded-lg">
+                                <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                                  Empate no 3º escrutínio - escolha o vencedor
+                                </p>
+                                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                                   {position.positionName}
                                 </p>
-                                <div className="space-y-2">
-                                  {topCandidates.map(candidate => (
+                              </div>
+                              <div className="space-y-2">
+                                {position.candidates
+                                  .sort((a, b) => b.voteCount - a.voteCount)
+                                  .slice(0, 2)
+                                  .map(candidate => (
                                     <Button
                                       key={candidate.candidateId}
                                       variant="outline"
@@ -498,25 +757,35 @@ export default function AdminPage() {
                                       <span className="text-xs text-muted-foreground">{candidate.voteCount} votos</span>
                                     </Button>
                                   ))}
-                                </div>
                               </div>
-                            );
-                          })}
-                      </div>
-                    )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
 
-                    {/* Show success message if all positions are decided */}
-                    {!results.positions.some(p => p.needsNextScrutiny || p.isTied) && (
-                      <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                          <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                            Todos os cargos foram decididos!
+                    {/* Show success message if all positions are completed */}
+                    {electionPositions.every(p => p.status === "completed") && (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              Todos os cargos foram decididos!
+                            </p>
+                          </div>
+                          <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                            Você pode exportar os resultados ou encerrar a eleição quando estiver pronto.
                           </p>
                         </div>
-                        <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                          Você pode encerrar a eleição quando estiver pronto.
-                        </p>
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          onClick={handleExportResults}
+                          data-testid="button-export-results"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Exportar Resultados (Imagem)
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -678,32 +947,20 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle>Criar Nova Eleição</DialogTitle>
             <DialogDescription>
-              Selecione o cargo para a nova eleição
+              Criar eleição para {new Date().getFullYear()}/{new Date().getFullYear() + 1} com todos os cargos
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="election-position">Cargo da Eleição</Label>
-              <Select
-                value={selectedElectionPosition}
-                onValueChange={setSelectedElectionPosition}
-              >
-                <SelectTrigger id="election-position" data-testid="select-election-position">
-                  <SelectValue placeholder="Selecione o cargo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {positions.map((position) => (
-                    <SelectItem key={position.id} value={position.id.toString()}>
-                      {position.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Uma nova eleição será criada para todos os cargos: Presidente, Vice-Presidente, 1º Secretário, 2º Secretário e Tesoureiro.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Os cargos serão votados sequencialmente, um de cada vez.
+            </p>
             <Button
               className="w-full"
               onClick={handleCreateElection}
-              disabled={createElectionMutation.isPending || loadingPositions}
+              disabled={createElectionMutation.isPending}
               data-testid="button-confirm-create-election"
             >
               {createElectionMutation.isPending ? "Criando..." : "Criar Eleição"}
@@ -731,11 +988,17 @@ export default function AdminPage() {
                   <SelectValue placeholder="Selecione o membro" />
                 </SelectTrigger>
                 <SelectContent>
-                  {nonAdminMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id.toString()}>
-                      {member.fullName}
-                    </SelectItem>
-                  ))}
+                  {availableMembers.length === 0 ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Todos os membros já foram eleitos ou são admins
+                    </div>
+                  ) : (
+                    availableMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id.toString()}>
+                        {member.fullName}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -816,6 +1079,24 @@ export default function AdminPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Export Results Component (hidden, used for image generation) */}
+      {activeElection && results && electionPositions.every(p => p.status === "completed") && (
+        <ExportResultsImage
+          ref={exportImageRef}
+          electionTitle={activeElection.name}
+          winners={results.positions
+            .filter(p => p.winner)
+            .map(p => ({
+              positionId: p.positionId,
+              positionName: p.positionName,
+              candidateName: p.winner!.candidateName,
+              photoUrl: p.winner!.photoUrl,
+              voteCount: p.winner!.voteCount,
+              wonAtScrutiny: p.winner!.wonAtScrutiny || 1,
+            }))}
+        />
+      )}
     </div>
   );
 }
