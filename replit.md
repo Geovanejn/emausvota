@@ -34,6 +34,7 @@ Preferred communication style: Simple, everyday language.
 - ✅ Admin can now register members with just name and email
 - ✅ **Integrated Resend for automatic email delivery** - verification codes sent via email
 - ✅ **Candidate selection from registered members** - admin selects members from dropdown instead of manual entry
+- ✅ **Mobile optimization complete** - all pages now fully responsive with mobile-first design
 
 ## System Architecture
 
@@ -57,6 +58,7 @@ Preferred communication style: Simple, everyday language.
 - **Tailwind CSS** for utility-first styling with custom design tokens
 - **Class Variance Authority (CVA)** for component variant management
 - Design system follows Material Design principles with custom UMP Emaús branding (primary orange #FFA500)
+- **Mobile-first responsive design** using Tailwind's `sm:` breakpoint (640px) for all pages
 
 **State Management Pattern**
 - React Context API for authentication state (`AuthProvider`)
@@ -135,7 +137,12 @@ Six main tables with relational integrity:
 **CSS & Styling**
 - **Tailwind CSS** with PostCSS and Autoprefixer
 - Custom design tokens defined in CSS variables
-- Responsive design with mobile-first approach
+- **Fully responsive mobile-first design:**
+  - Mobile (< 640px): Card layouts, stacked headers, compact spacing
+  - Desktop (≥ 640px): Table layouts, side-by-side headers, spacious padding
+  - Breakpoint: Tailwind's `sm:` at 640px
+  - All pages optimized: Login, Admin (dual-layout tables/cards), Vote, Results
+  - Accessibility: aria-labels on icon-only mobile buttons
 
 **Validation & Type Safety**
 - **Zod** - Runtime schema validation
