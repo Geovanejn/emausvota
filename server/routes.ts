@@ -17,6 +17,7 @@ import {
   requestCodeSchema,
   verifyCodeSchema,
   addMemberSchema,
+  getGravatarUrl,
 } from "@shared/schema";
 import type { AuthResponse } from "@shared/schema";
 import { Resend } from "resend";
@@ -249,6 +250,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCandidateSchema.parse(req.body);
       
+      // Validate that the user is not an admin
+      const user = storage.getUserById(validatedData.userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      if (user.isAdmin) {
+        return res.status(400).json({ message: "Administradores não podem ser candidatos" });
+      }
+      
       const candidate = storage.createCandidate(validatedData);
       res.json(candidate);
     } catch (error) {
@@ -278,6 +289,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(membersWithoutPasswords);
     } catch (error) {
       console.error("Get members error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar membros" 
+      });
+    }
+  });
+
+  app.get("/api/members/non-admins", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const members = storage.getAllMembers(true); // Exclude admins
+      const membersWithoutPasswords = members.map(({ password, ...user }) => user);
+      res.json(membersWithoutPasswords);
+    } catch (error) {
+      console.error("Get non-admin members error:", error);
       res.status(500).json({ 
         message: error instanceof Error ? error.message : "Erro ao buscar membros" 
       });
@@ -334,9 +358,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados incompletos" });
       }
 
-      const hasVoted = storage.hasUserVoted(voterId, positionId, electionId);
+      // Get current election to determine scrutiny round
+      const election = storage.getElectionById(electionId);
+      if (!election) {
+        return res.status(404).json({ message: "Eleição não encontrada" });
+      }
+
+      const scrutinyRound = election.currentScrutiny;
+
+      const hasVoted = storage.hasUserVoted(voterId, positionId, electionId, scrutinyRound);
       if (hasVoted) {
-        return res.status(403).json({ message: "Você já votou para esse cargo." });
+        return res.status(403).json({ message: "Você já votou para esse cargo neste escrutínio." });
       }
 
       const vote = storage.createVote({
@@ -344,6 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         candidateId,
         positionId,
         electionId,
+        scrutinyRound,
       });
 
       res.json({ 
@@ -354,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Vote error:", error);
       
       if (error instanceof Error && error.message.includes("UNIQUE constraint")) {
-        return res.status(403).json({ message: "Você já votou para esse cargo." });
+        return res.status(403).json({ message: "Você já votou para esse cargo neste escrutínio." });
       }
       
       res.status(400).json({ 
@@ -366,6 +399,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/results/latest", async (req, res) => {
     try {
       const results = storage.getLatestElectionResults();
+      if (results) {
+        // Add Gravatar URLs to candidates
+        results.positions.forEach(position => {
+          position.candidates.forEach(candidate => {
+            candidate.photoUrl = getGravatarUrl(candidate.candidateEmail);
+          });
+        });
+      }
       res.json(results);
     } catch (error) {
       console.error("Get latest results error:", error);
@@ -384,11 +425,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Eleição não encontrada" });
       }
 
+      // Add Gravatar URLs to candidates
+      results.positions.forEach(position => {
+        position.candidates.forEach(candidate => {
+          candidate.photoUrl = getGravatarUrl(candidate.candidateEmail);
+        });
+      });
+
       res.json(results);
     } catch (error) {
       console.error("Get results error:", error);
       res.status(500).json({ 
         message: error instanceof Error ? error.message : "Erro ao buscar resultados" 
+      });
+    }
+  });
+
+  app.patch("/api/elections/:id/advance-scrutiny", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      
+      const election = storage.getElectionById(electionId);
+      if (!election) {
+        return res.status(404).json({ message: "Eleição não encontrada" });
+      }
+
+      if (!election.isActive) {
+        return res.status(400).json({ message: "Eleição não está ativa" });
+      }
+
+      if (election.currentScrutiny >= 3) {
+        return res.status(400).json({ message: "Eleição já está no último escrutínio" });
+      }
+
+      storage.advanceScrutiny(electionId);
+      res.json({ message: "Escrutínio avançado com sucesso" });
+    } catch (error) {
+      console.error("Advance scrutiny error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao avançar escrutínio" 
+      });
+    }
+  });
+
+  app.patch("/api/elections/:id/set-winner", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const { candidateId, positionId } = req.body;
+      
+      if (!candidateId || !positionId) {
+        return res.status(400).json({ message: "Dados incompletos" });
+      }
+
+      const election = storage.getElectionById(electionId);
+      if (!election) {
+        return res.status(404).json({ message: "Eleição não encontrada" });
+      }
+
+      if (!election.isActive) {
+        return res.status(400).json({ message: "Eleição não está ativa" });
+      }
+
+      if (election.currentScrutiny !== 3) {
+        return res.status(400).json({ message: "Vencedor só pode ser escolhido no 3º escrutínio" });
+      }
+
+      storage.setWinner(electionId, candidateId, 3);
+      res.json({ message: "Vencedor definido com sucesso" });
+    } catch (error) {
+      console.error("Set winner error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao definir vencedor" 
       });
     }
   });
