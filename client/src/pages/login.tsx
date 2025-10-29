@@ -2,43 +2,42 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema, registerSchema, type LoginData, type RegisterData, type AuthResponse } from "@shared/schema";
+import { requestCodeSchema, verifyCodeSchema, type RequestCodeData, type VerifyCodeData, type AuthResponse } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { UserCircle } from "lucide-react";
+import { UserCircle, Mail, KeyRound } from "lucide-react";
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [email, setEmail] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginForm = useForm<LoginData>({
-    resolver: zodResolver(loginSchema),
+  const emailForm = useForm<RequestCodeData>({
+    resolver: zodResolver(requestCodeSchema),
     defaultValues: {
       email: "",
-      password: "",
     },
   });
 
-  const registerForm = useForm<RegisterData>({
-    resolver: zodResolver(registerSchema),
+  const codeForm = useForm<VerifyCodeData>({
+    resolver: zodResolver(verifyCodeSchema),
     defaultValues: {
-      fullName: "",
       email: "",
-      password: "",
+      code: "",
     },
   });
 
-  const onLogin = async (data: LoginData) => {
+  const onRequestCode = async (data: RequestCodeData) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/auth/request-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -46,7 +45,40 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Erro ao fazer login");
+        throw new Error(error.message || "Erro ao solicitar código");
+      }
+
+      setEmail(data.email);
+      setStep("code");
+      codeForm.setValue("email", data.email);
+
+      toast({
+        title: "Código enviado!",
+        description: "Verifique seu email e digite o código de 6 dígitos",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao solicitar código",
+        description: error instanceof Error ? error.message : "Tente novamente",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onVerifyCode = async (data: VerifyCodeData) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao verificar código");
       }
 
       const result: AuthResponse = await response.json();
@@ -64,8 +96,8 @@ export default function LoginPage() {
       }
     } catch (error) {
       toast({
-        title: "Erro ao fazer login",
-        description: error instanceof Error ? error.message : "Tente novamente",
+        title: "Erro ao verificar código",
+        description: error instanceof Error ? error.message : "Código inválido ou expirado",
         variant: "destructive",
       });
     } finally {
@@ -73,38 +105,9 @@ export default function LoginPage() {
     }
   };
 
-  const onRegister = async (data: RegisterData) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao criar conta");
-      }
-
-      const result: AuthResponse = await response.json();
-      login(result.user, result.token);
-
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Você já pode começar a votar",
-      });
-
-      setLocation("/vote");
-    } catch (error) {
-      toast({
-        title: "Erro ao criar conta",
-        description: error instanceof Error ? error.message : "Tente novamente",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleBackToEmail = () => {
+    setStep("email");
+    codeForm.reset();
   };
 
   return (
@@ -125,46 +128,40 @@ export default function LoginPage() {
 
           <Card className="border-border shadow-md">
             <CardHeader>
-              <CardTitle className="text-2xl">
-                {isLogin ? "Entrar" : "Criar Conta"}
+              <CardTitle className="text-2xl flex items-center gap-2">
+                {step === "email" ? (
+                  <>
+                    <Mail className="w-6 h-6" />
+                    Entrar
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-6 h-6" />
+                    Verificar Código
+                  </>
+                )}
               </CardTitle>
               <CardDescription>
-                {isLogin 
-                  ? "Entre com suas credenciais para votar" 
-                  : "Crie sua conta para participar das eleições"}
+                {step === "email" 
+                  ? "Digite seu email para receber o código de verificação" 
+                  : `Código enviado para ${email}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLogin ? (
-                <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+              {step === "email" ? (
+                <form onSubmit={emailForm.handleSubmit(onRequestCode)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
-                      id="login-email"
+                      id="email"
                       type="email"
                       placeholder="seu@email.com"
                       data-testid="input-email"
-                      {...loginForm.register("email")}
+                      {...emailForm.register("email")}
                     />
-                    {loginForm.formState.errors.email && (
+                    {emailForm.formState.errors.email && (
                       <p className="text-sm text-destructive">
-                        {loginForm.formState.errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••"
-                      data-testid="input-password"
-                      {...loginForm.register("password")}
-                    />
-                    {loginForm.formState.errors.password && (
-                      <p className="text-sm text-destructive">
-                        {loginForm.formState.errors.password.message}
+                        {emailForm.formState.errors.email.message}
                       </p>
                     )}
                   </div>
@@ -173,86 +170,65 @@ export default function LoginPage() {
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
-                    data-testid="button-login"
+                    data-testid="button-request-code"
                   >
-                    {isLoading ? "Entrando..." : "Entrar"}
+                    {isLoading ? "Enviando..." : "Enviar Código"}
                   </Button>
                 </form>
               ) : (
-                <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+                <form onSubmit={codeForm.handleSubmit(onVerifyCode)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="register-name">Nome Completo</Label>
+                    <Label htmlFor="code">Código de Verificação</Label>
                     <Input
-                      id="register-name"
+                      id="code"
                       type="text"
-                      placeholder="Seu nome completo"
-                      data-testid="input-name"
-                      {...registerForm.register("fullName")}
+                      placeholder="000000"
+                      maxLength={6}
+                      className="text-center text-2xl tracking-widest"
+                      data-testid="input-code"
+                      {...codeForm.register("code")}
                     />
-                    {registerForm.formState.errors.fullName && (
+                    {codeForm.formState.errors.code && (
                       <p className="text-sm text-destructive">
-                        {registerForm.formState.errors.fullName.message}
+                        {codeForm.formState.errors.code.message}
                       </p>
                     )}
+                    <p className="text-xs text-muted-foreground text-center">
+                      Digite o código de 6 dígitos enviado para seu email
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      data-testid="input-email"
-                      {...registerForm.register("email")}
-                    />
-                    {registerForm.formState.errors.email && (
-                      <p className="text-sm text-destructive">
-                        {registerForm.formState.errors.email.message}
-                      </p>
-                    )}
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isLoading}
+                      data-testid="button-verify-code"
+                    >
+                      {isLoading ? "Verificando..." : "Verificar e Entrar"}
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleBackToEmail}
+                      disabled={isLoading}
+                      data-testid="button-back"
+                    >
+                      Voltar
+                    </Button>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      data-testid="input-password"
-                      {...registerForm.register("password")}
-                    />
-                    {registerForm.formState.errors.password && (
-                      <p className="text-sm text-destructive">
-                        {registerForm.formState.errors.password.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading}
-                    data-testid="button-register"
-                  >
-                    {isLoading ? "Criando conta..." : "Criar Conta"}
-                  </Button>
                 </form>
               )}
-
-              <div className="mt-6 text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-primary hover:underline"
-                  data-testid="button-toggle-mode"
-                >
-                  {isLogin 
-                    ? "Não tem uma conta? Criar conta" 
-                    : "Já tem uma conta? Entrar"}
-                </button>
-              </div>
             </CardContent>
           </Card>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Código válido por 15 minutos
+            </p>
+          </div>
         </div>
       </div>
     </div>

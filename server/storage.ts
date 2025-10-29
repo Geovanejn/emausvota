@@ -11,6 +11,8 @@ import type {
   InsertCandidate,
   Vote,
   InsertVote,
+  VerificationCode,
+  InsertVerificationCode,
   CandidateWithDetails,
   ElectionResults,
 } from "@shared/schema";
@@ -44,6 +46,10 @@ export interface IStorage {
   
   getElectionResults(electionId: number): ElectionResults | null;
   getLatestElectionResults(): ElectionResults | null;
+  
+  createVerificationCode(data: InsertVerificationCode): VerificationCode;
+  getValidVerificationCode(email: string, code: string): VerificationCode | null;
+  deleteVerificationCodesByEmail(email: string): void;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -276,6 +282,43 @@ export class SQLiteStorage implements IStorage {
     if (!row) return null;
     
     return this.getElectionResults(row.id);
+  }
+
+  createVerificationCode(data: InsertVerificationCode): VerificationCode {
+    const stmt = db.prepare(
+      "INSERT INTO verification_codes (email, code, expires_at) VALUES (?, ?, ?) RETURNING *"
+    );
+    const row = stmt.get(data.email, data.code, data.expiresAt) as any;
+    
+    return {
+      id: row.id,
+      email: row.email,
+      code: row.code,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  getValidVerificationCode(email: string, code: string): VerificationCode | null {
+    const stmt = db.prepare(
+      "SELECT * FROM verification_codes WHERE email = ? AND code = ? AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1"
+    );
+    const row = stmt.get(email, code) as any;
+    
+    if (!row) return null;
+    
+    return {
+      id: row.id,
+      email: row.email,
+      code: row.code,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  deleteVerificationCodesByEmail(email: string): void {
+    const stmt = db.prepare("DELETE FROM verification_codes WHERE email = ?");
+    stmt.run(email);
   }
 }
 

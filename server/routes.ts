@@ -10,8 +10,19 @@ import {
   requireMember,
   type AuthRequest 
 } from "./auth";
-import { loginSchema, registerSchema, insertCandidateSchema } from "@shared/schema";
+import { 
+  loginSchema, 
+  registerSchema, 
+  insertCandidateSchema,
+  requestCodeSchema,
+  verifyCodeSchema,
+  addMemberSchema,
+} from "@shared/schema";
 import type { AuthResponse } from "@shared/schema";
+
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
@@ -79,6 +90,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Login error:", error);
       res.status(400).json({ 
         message: error instanceof Error ? error.message : "Erro ao fazer login" 
+      });
+    }
+  });
+
+  app.post("/api/auth/request-code", async (req, res) => {
+    try {
+      const validatedData = requestCodeSchema.parse(req.body);
+      
+      const user = storage.getUserByEmail(validatedData.email);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      storage.deleteVerificationCodesByEmail(validatedData.email);
+
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+      storage.createVerificationCode({
+        email: validatedData.email,
+        code,
+        expiresAt,
+      });
+
+      console.log(`Código de verificação para ${validatedData.email}: ${code}`);
+
+      res.json({ message: "Código enviado para seu email" });
+    } catch (error) {
+      console.error("Request code error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao solicitar código" 
+      });
+    }
+  });
+
+  app.post("/api/auth/verify-code", async (req, res) => {
+    try {
+      const validatedData = verifyCodeSchema.parse(req.body);
+      
+      const verificationCode = storage.getValidVerificationCode(
+        validatedData.email,
+        validatedData.code
+      );
+
+      if (!verificationCode) {
+        return res.status(401).json({ message: "Código inválido ou expirado" });
+      }
+
+      const user = storage.getUserByEmail(validatedData.email);
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+
+      storage.deleteVerificationCodesByEmail(validatedData.email);
+
+      const { password, ...userWithoutPassword } = user;
+      const token = generateToken(userWithoutPassword);
+
+      const response: AuthResponse = {
+        user: userWithoutPassword,
+        token,
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error("Verify code error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao verificar código" 
+      });
+    }
+  });
+
+  app.post("/api/admin/members", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const validatedData = addMemberSchema.parse(req.body);
+      
+      const existingUser = storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+
+      const user = storage.createUser({
+        fullName: validatedData.fullName,
+        email: validatedData.email,
+        password: Math.random().toString(36),
+        isAdmin: false,
+        isMember: true,
+      } as any);
+
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Add member error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao adicionar membro" 
       });
     }
   });

@@ -63,6 +63,14 @@ export function initializeDatabase() {
       FOREIGN KEY (position_id) REFERENCES positions(id),
       FOREIGN KEY (election_id) REFERENCES elections(id)
     );
+
+    CREATE TABLE IF NOT EXISTS verification_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   const fixedPositions = [
