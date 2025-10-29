@@ -25,40 +25,6 @@ function generateVerificationCode(): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const validatedData = registerSchema.parse(req.body);
-      
-      const existingUser = storage.getUserByEmail(validatedData.email);
-      if (existingUser) {
-        return res.status(400).json({ message: "Email já cadastrado" });
-      }
-
-      const hashedPassword = await hashPassword(validatedData.password);
-      
-      const user = storage.createUser({
-        fullName: validatedData.fullName,
-        email: validatedData.email,
-        password: hashedPassword,
-      });
-
-      const { password, ...userWithoutPassword } = user;
-      const token = generateToken(userWithoutPassword);
-
-      const response: AuthResponse = {
-        user: userWithoutPassword,
-        token,
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error("Register error:", error);
-      res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Erro ao criar conta" 
-      });
-    }
-  });
-
   app.post("/api/auth/login", async (req, res) => {
     try {
       const validatedData = loginSchema.parse(req.body);

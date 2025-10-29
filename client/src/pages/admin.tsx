@@ -38,10 +38,15 @@ export default function AdminPage() {
   const [, setLocation] = useLocation();
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [isCreateElectionOpen, setIsCreateElectionOpen] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [newElectionName, setNewElectionName] = useState("");
   const [newCandidate, setNewCandidate] = useState({
     name: "",
     positionId: "",
+  });
+  const [newMember, setNewMember] = useState({
+    fullName: "",
+    email: "",
   });
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
@@ -121,6 +126,27 @@ export default function AdminPage() {
     },
   });
 
+  const addMemberMutation = useMutation({
+    mutationFn: async (member: { fullName: string; email: string }) => {
+      return await apiRequest("POST", "/api/admin/members", member);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Membro cadastrado!",
+        description: "O membro foi cadastrado com sucesso",
+      });
+      setIsAddMemberOpen(false);
+      setNewMember({ fullName: "", email: "" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao cadastrar membro",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     logout();
     setLocation("/");
@@ -159,6 +185,22 @@ export default function AdminPage() {
       name: newCandidate.name,
       positionId: parseInt(newCandidate.positionId),
       electionId: activeElection.id,
+    });
+  };
+
+  const handleAddMember = () => {
+    if (!newMember.fullName || !newMember.email) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addMemberMutation.mutate({
+      fullName: newMember.fullName,
+      email: newMember.email,
     });
   };
 
@@ -243,8 +285,17 @@ export default function AdminPage() {
                     disabled={!activeElection}
                     data-testid="button-add-candidate"
                   >
-                    <Users className="w-4 h-4 mr-2" />
+                    <PlusCircle className="w-4 h-4 mr-2" />
                     Adicionar Candidato
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setIsAddMemberOpen(true)}
+                    data-testid="button-add-member"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Cadastrar Membro
                   </Button>
                   <Button
                     variant="outline"
@@ -380,6 +431,54 @@ export default function AdminPage() {
               data-testid="button-confirm-add-candidate"
             >
               {addCandidateMutation.isPending ? "Adicionando..." : "Adicionar Candidato"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Novo Membro</DialogTitle>
+            <DialogDescription>
+              Adicione um novo membro que poderá votar nas eleições
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="member-name">Nome Completo</Label>
+              <Input
+                id="member-name"
+                placeholder="Nome completo do membro"
+                value={newMember.fullName}
+                onChange={(e) =>
+                  setNewMember({ ...newMember, fullName: e.target.value })
+                }
+                data-testid="input-member-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="member-email">Email</Label>
+              <Input
+                id="member-email"
+                type="email"
+                placeholder="email@exemplo.com"
+                value={newMember.email}
+                onChange={(e) =>
+                  setNewMember({ ...newMember, email: e.target.value })
+                }
+                data-testid="input-member-email"
+              />
+            </div>
+
+            <Button
+              onClick={handleAddMember}
+              className="w-full"
+              disabled={addMemberMutation.isPending}
+              data-testid="button-submit-member"
+            >
+              {addMemberMutation.isPending ? "Cadastrando..." : "Cadastrar Membro"}
             </Button>
           </div>
         </DialogContent>
