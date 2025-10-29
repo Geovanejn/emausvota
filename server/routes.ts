@@ -190,6 +190,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/admin/members/:id", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const memberId = parseInt(req.params.id);
+      
+      if (isNaN(memberId)) {
+        return res.status(400).json({ message: "ID inválido" });
+      }
+
+      storage.deleteMember(memberId);
+      res.json({ message: "Membro removido com sucesso" });
+    } catch (error) {
+      console.error("Delete member error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao remover membro" 
+      });
+    }
+  });
+
   app.post("/api/elections", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const { name } = req.body;
