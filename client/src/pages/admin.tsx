@@ -39,7 +39,7 @@ export default function AdminPage() {
   const [isAddCandidateOpen, setIsAddCandidateOpen] = useState(false);
   const [isCreateElectionOpen, setIsCreateElectionOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-  const [newElectionName, setNewElectionName] = useState("");
+  const [selectedElectionPosition, setSelectedElectionPosition] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [newMember, setNewMember] = useState({
@@ -75,7 +75,7 @@ export default function AdminPage() {
         description: "A nova eleição está ativa agora",
       });
       setIsCreateElectionOpen(false);
-      setNewElectionName("");
+      setSelectedElectionPosition("");
     },
     onError: (error: Error) => {
       toast({
@@ -157,15 +157,18 @@ export default function AdminPage() {
   };
 
   const handleCreateElection = () => {
-    if (!newElectionName.trim()) {
+    if (!selectedElectionPosition) {
       toast({
-        title: "Nome obrigatório",
-        description: "Informe o nome da eleição",
+        title: "Cargo obrigatório",
+        description: "Selecione o cargo da eleição",
         variant: "destructive",
       });
       return;
     }
-    createElectionMutation.mutate(newElectionName);
+    const selectedPosition = positions.find(p => p.id === parseInt(selectedElectionPosition));
+    if (!selectedPosition) return;
+    
+    createElectionMutation.mutate(`Eleição ${selectedPosition.name} ${new Date().getFullYear()}`);
   };
 
   const handleCloseElection = () => {
@@ -368,24 +371,32 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle>Criar Nova Eleição</DialogTitle>
             <DialogDescription>
-              Inicie uma nova eleição para a UMP Emaús
+              Selecione o cargo para a nova eleição
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="election-name">Nome da Eleição</Label>
-              <Input
-                id="election-name"
-                placeholder="Ex: Eleição 2025"
-                value={newElectionName}
-                onChange={(e) => setNewElectionName(e.target.value)}
-                data-testid="input-election-name"
-              />
+              <Label htmlFor="election-position">Cargo da Eleição</Label>
+              <Select
+                value={selectedElectionPosition}
+                onValueChange={setSelectedElectionPosition}
+              >
+                <SelectTrigger id="election-position" data-testid="select-election-position">
+                  <SelectValue placeholder="Selecione o cargo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {positions.map((position) => (
+                    <SelectItem key={position.id} value={position.id.toString()}>
+                      {position.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               className="w-full"
               onClick={handleCreateElection}
-              disabled={createElectionMutation.isPending}
+              disabled={createElectionMutation.isPending || loadingPositions}
               data-testid="button-confirm-create-election"
             >
               {createElectionMutation.isPending ? "Criando..." : "Criar Eleição"}
