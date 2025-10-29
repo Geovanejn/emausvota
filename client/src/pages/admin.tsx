@@ -40,10 +40,8 @@ export default function AdminPage() {
   const [isCreateElectionOpen, setIsCreateElectionOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [newElectionName, setNewElectionName] = useState("");
-  const [newCandidate, setNewCandidate] = useState({
-    name: "",
-    positionId: "",
-  });
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [selectedPositionId, setSelectedPositionId] = useState("");
   const [newMember, setNewMember] = useState({
     fullName: "",
     email: "",
@@ -60,6 +58,10 @@ export default function AdminPage() {
   const { data: candidates = [], isLoading: loadingCandidates } = useQuery<CandidateWithDetails[]>({
     queryKey: ["/api/candidates"],
     enabled: !!activeElection,
+  });
+
+  const { data: members = [] } = useQuery<Array<{ id: number; fullName: string; email: string }>>({
+    queryKey: ["/api/members"],
   });
 
   const createElectionMutation = useMutation({
@@ -115,7 +117,8 @@ export default function AdminPage() {
         description: "O candidato foi registrado na eleição",
       });
       setIsAddCandidateOpen(false);
-      setNewCandidate({ name: "", positionId: "" });
+      setSelectedMemberId("");
+      setSelectedPositionId("");
     },
     onError: (error: Error) => {
       toast({
@@ -172,18 +175,21 @@ export default function AdminPage() {
   };
 
   const handleAddCandidate = () => {
-    if (!newCandidate.name || !newCandidate.positionId || !activeElection) {
+    if (!selectedMemberId || !selectedPositionId || !activeElection) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha todos os campos",
+        description: "Selecione um membro e um cargo",
         variant: "destructive",
       });
       return;
     }
 
+    const selectedMember = members.find(m => m.id === parseInt(selectedMemberId));
+    if (!selectedMember) return;
+
     addCandidateMutation.mutate({
-      name: newCandidate.name,
-      positionId: parseInt(newCandidate.positionId),
+      name: selectedMember.fullName,
+      positionId: parseInt(selectedPositionId),
       electionId: activeElection.id,
     });
   };
@@ -392,25 +398,33 @@ export default function AdminPage() {
           <DialogHeader>
             <DialogTitle>Adicionar Candidato</DialogTitle>
             <DialogDescription>
-              Registre um novo candidato na eleição atual
+              Selecione um membro cadastrado para concorrer a um cargo
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="candidate-name">Nome do Candidato</Label>
-              <Input
-                id="candidate-name"
-                placeholder="Nome completo"
-                value={newCandidate.name}
-                onChange={(e) => setNewCandidate({ ...newCandidate, name: e.target.value })}
-                data-testid="input-candidate-name"
-              />
+              <Label htmlFor="candidate-member">Membro</Label>
+              <Select
+                value={selectedMemberId}
+                onValueChange={setSelectedMemberId}
+              >
+                <SelectTrigger id="candidate-member" data-testid="select-member">
+                  <SelectValue placeholder="Selecione o membro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id.toString()}>
+                      {member.fullName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="candidate-position">Cargo</Label>
               <Select
-                value={newCandidate.positionId}
-                onValueChange={(value) => setNewCandidate({ ...newCandidate, positionId: value })}
+                value={selectedPositionId}
+                onValueChange={setSelectedPositionId}
               >
                 <SelectTrigger id="candidate-position" data-testid="select-position">
                   <SelectValue placeholder="Selecione o cargo" />
