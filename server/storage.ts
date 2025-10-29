@@ -29,6 +29,7 @@ export interface IStorage {
   getUserByEmail(email: string): User | undefined;
   createUser(user: InsertUser): User;
   getAllMembers(): User[];
+  deleteMember(id: number): void;
   
   getAllPositions(): Position[];
   
@@ -103,6 +104,11 @@ export class SQLiteStorage implements IStorage {
       isAdmin: Boolean(row.is_admin),
       isMember: Boolean(row.is_member),
     }));
+  }
+
+  deleteMember(id: number): void {
+    const stmt = db.prepare("DELETE FROM users WHERE id = ? AND is_admin = 0");
+    stmt.run(id);
   }
 
   getAllPositions(): Position[] {
