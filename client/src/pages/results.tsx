@@ -52,13 +52,27 @@ export default function ResultsPage() {
           </div>
           <div className="flex gap-2 self-end sm:self-auto">
             {isAuthenticated && (
-              <Button variant="outline" onClick={handleBack} data-testid="button-back" size="sm" className="sm:h-9">
+              <Button 
+                variant="outline" 
+                onClick={handleBack} 
+                data-testid="button-back" 
+                size="sm" 
+                className="sm:h-9"
+                aria-label="Voltar"
+              >
                 <ArrowLeft className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Voltar</span>
               </Button>
             )}
             {isAuthenticated && (
-              <Button variant="outline" onClick={handleLogout} data-testid="button-logout" size="sm" className="sm:h-9">
+              <Button 
+                variant="outline" 
+                onClick={handleLogout} 
+                data-testid="button-logout" 
+                size="sm" 
+                className="sm:h-9"
+                aria-label="Sair"
+              >
                 <LogOut className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Sair</span>
               </Button>
