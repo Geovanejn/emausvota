@@ -28,6 +28,7 @@ const db = new Database(dbPath);
 export interface IStorage {
   getUserByEmail(email: string): User | undefined;
   createUser(user: InsertUser): User;
+  getAllMembers(): User[];
   
   getAllPositions(): Position[];
   
@@ -88,6 +89,20 @@ export class SQLiteStorage implements IStorage {
       isAdmin: Boolean(row.is_admin),
       isMember: Boolean(row.is_member),
     };
+  }
+
+  getAllMembers(): User[] {
+    const stmt = db.prepare("SELECT * FROM users WHERE is_member = 1 ORDER BY full_name");
+    const rows = stmt.all() as any[];
+    
+    return rows.map(row => ({
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      password: row.password,
+      isAdmin: Boolean(row.is_admin),
+      isMember: Boolean(row.is_member),
+    }));
   }
 
   getAllPositions(): Position[] {

@@ -253,6 +253,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/members", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const members = storage.getAllMembers();
+      const membersWithoutPasswords = members.map(({ password, ...user }) => user);
+      res.json(membersWithoutPasswords);
+    } catch (error) {
+      console.error("Get members error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar membros" 
+      });
+    }
+  });
+
   app.get("/api/positions", async (req, res) => {
     try {
       const positions = storage.getAllPositions();
