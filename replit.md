@@ -32,6 +32,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ Results now show vote counts and sort candidates by votes (descending)
 - ✅ Updated position names to Portuguese (Presidente, Vice-Presidente, etc.)
 - ✅ Admin can now register members with just name and email
+- ✅ **Integrated Resend for automatic email delivery** - verification codes sent via email
+- ✅ **Candidate selection from registered members** - admin selects members from dropdown instead of manual entry
 
 ## System Architecture
 
@@ -114,6 +116,12 @@ Six main tables with relational integrity:
 - Users cannot vote multiple times for the same position
 
 ### External Dependencies
+
+**Email Service**
+- **Resend** - Transactional email delivery service
+- Used for sending 6-digit verification codes during login
+- Environment variable: `RESEND_API_KEY` (required for email functionality)
+- Fallback: Codes printed to console if email fails
 
 **UI Component Libraries**
 - **@radix-ui/** - Accessible component primitives (24+ components including dialogs, dropdowns, tooltips)
