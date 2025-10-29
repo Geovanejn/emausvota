@@ -246,6 +246,171 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Election Attendance endpoints
+  app.get("/api/elections/:id/attendance", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const attendance = storage.getElectionAttendance(electionId);
+      
+      // Join with user information
+      const attendanceWithUsers = attendance.map(att => {
+        const user = storage.getUserById(att.memberId);
+        return {
+          ...att,
+          memberName: user?.fullName || '',
+          memberEmail: user?.email || '',
+        };
+      });
+      
+      res.json(attendanceWithUsers);
+    } catch (error) {
+      console.error("Get attendance error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar presença" 
+      });
+    }
+  });
+
+  app.post("/api/elections/:id/attendance/initialize", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      storage.initializeAttendance(electionId);
+      res.json({ message: "Lista de presença inicializada" });
+    } catch (error) {
+      console.error("Initialize attendance error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao inicializar presença" 
+      });
+    }
+  });
+
+  app.patch("/api/elections/:id/attendance/:memberId", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const memberId = parseInt(req.params.memberId);
+      const { isPresent } = req.body;
+      
+      if (typeof isPresent !== 'boolean') {
+        return res.status(400).json({ message: "isPresent deve ser booleano" });
+      }
+      
+      storage.setMemberAttendance(electionId, memberId, isPresent);
+      res.json({ message: "Presença atualizada" });
+    } catch (error) {
+      console.error("Set attendance error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao atualizar presença" 
+      });
+    }
+  });
+
+  app.get("/api/elections/:id/attendance/count", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const count = storage.getPresentCount(electionId);
+      res.json({ presentCount: count });
+    } catch (error) {
+      console.error("Get present count error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao contar presentes" 
+      });
+    }
+  });
+
+  // Election Positions endpoints
+  app.get("/api/elections/:id/positions", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const electionPositions = storage.getElectionPositions(electionId);
+      
+      // Join with position names
+      const positionsWithNames = electionPositions.map(ep => {
+        const allPositions = storage.getAllPositions();
+        const position = allPositions.find(p => p.id === ep.positionId);
+        return {
+          ...ep,
+          positionName: position?.name || '',
+        };
+      });
+      
+      res.json(positionsWithNames);
+    } catch (error) {
+      console.error("Get election positions error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar cargos da eleição" 
+      });
+    }
+  });
+
+  app.get("/api/elections/:id/positions/active", authenticateToken, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const activePosition = storage.getActiveElectionPosition(electionId);
+      
+      if (!activePosition) {
+        return res.json(null);
+      }
+      
+      // Join with position name
+      const allPositions = storage.getAllPositions();
+      const position = allPositions.find(p => p.id === activePosition.positionId);
+      
+      res.json({
+        ...activePosition,
+        positionName: position?.name || '',
+      });
+    } catch (error) {
+      console.error("Get active position error:", error);
+      res.status(500).json({ 
+        message: error instanceof Error ? error.message : "Erro ao buscar cargo ativo" 
+      });
+    }
+  });
+
+  app.post("/api/elections/:id/positions/advance-scrutiny", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const activePosition = storage.getActiveElectionPosition(electionId);
+      
+      if (!activePosition) {
+        return res.status(404).json({ message: "Nenhum cargo ativo encontrado" });
+      }
+      
+      storage.advancePositionScrutiny(activePosition.id);
+      res.json({ message: "Escrutínio avançado com sucesso" });
+    } catch (error) {
+      console.error("Advance scrutiny error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao avançar escrutínio" 
+      });
+    }
+  });
+
+  app.post("/api/elections/:id/positions/open-next", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const nextPosition = storage.openNextPosition(electionId);
+      
+      if (!nextPosition) {
+        return res.status(404).json({ message: "Nenhum próximo cargo disponível" });
+      }
+      
+      // Join with position name
+      const allPositions = storage.getAllPositions();
+      const position = allPositions.find(p => p.id === nextPosition.positionId);
+      
+      res.json({
+        ...nextPosition,
+        positionName: position?.name || '',
+      });
+    } catch (error) {
+      console.error("Open next position error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao abrir próximo cargo" 
+      });
+    }
+  });
+
   app.post("/api/candidates", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertCandidateSchema.parse(req.body);
@@ -363,13 +528,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados incompletos" });
       }
 
-      // Get current election to determine scrutiny round
-      const election = storage.getElectionById(electionId);
-      if (!election) {
-        return res.status(404).json({ message: "Eleição não encontrada" });
+      // Get active position for this election to determine scrutiny round
+      const activePosition = storage.getActiveElectionPosition(electionId);
+      if (!activePosition) {
+        return res.status(400).json({ message: "Nenhum cargo ativo no momento" });
       }
 
-      const scrutinyRound = election.currentScrutiny;
+      // Verify user is voting for the active position
+      if (activePosition.positionId !== positionId) {
+        return res.status(400).json({ message: "Este cargo não está ativo no momento" });
+      }
+
+      const scrutinyRound = activePosition.currentScrutiny;
 
       const hasVoted = storage.hasUserVoted(voterId, positionId, electionId, scrutinyRound);
       if (hasVoted) {
