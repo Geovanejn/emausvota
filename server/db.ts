@@ -249,7 +249,30 @@ export function initializeDatabase() {
         console.log(`Found ${duplicates.length} duplicate candidate sets. Cleaning up...`);
         
         for (const dup of duplicates) {
-          // Delete duplicate candidates (keeping the one with min id)
+          // First, find all duplicate candidate IDs that will be deleted
+          const duplicateCandidateIds = sqlite.prepare(`
+            SELECT id FROM candidates 
+            WHERE user_id = ? AND position_id = ? AND election_id = ? AND id != ?
+          `).all(dup.user_id, dup.position_id, dup.election_id, dup.keep_id) as Array<{ id: number }>;
+          
+          if (duplicateCandidateIds.length > 0) {
+            const idsToDelete = duplicateCandidateIds.map(c => c.id);
+            const placeholders = idsToDelete.map(() => '?').join(',');
+            
+            // Clean up orphaned votes referencing these duplicate candidates
+            const votesDeleted = sqlite.prepare(`
+              DELETE FROM votes WHERE candidate_id IN (${placeholders})
+            `).run(...idsToDelete);
+            
+            // Clean up orphaned election_winners referencing these duplicate candidates
+            const winnersDeleted = sqlite.prepare(`
+              DELETE FROM election_winners WHERE candidate_id IN (${placeholders})
+            `).run(...idsToDelete);
+            
+            console.log(`Cleaned up ${votesDeleted.changes || 0} orphaned votes and ${winnersDeleted.changes || 0} orphaned winners for duplicate candidates`);
+          }
+          
+          // Now safe to delete duplicate candidates (keeping the one with min id)
           sqlite.prepare(`
             DELETE FROM candidates 
             WHERE user_id = ? AND position_id = ? AND election_id = ? AND id != ?

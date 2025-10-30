@@ -54,6 +54,7 @@ export interface IStorage {
   openNextPosition(electionId: number): ElectionPosition | null;
   openPosition(electionPositionId: number): ElectionPosition;
   completePosition(electionPositionId: number): void;
+  forceCompletePosition(electionPositionId: number, reason: string): void;
   
   // Election Attendance management
   getElectionAttendance(electionId: number): ElectionAttendance[];
@@ -447,6 +448,18 @@ export class SQLiteStorage implements IStorage {
   }
 
   completePosition(electionPositionId: number): void {
+    db.prepare(`
+      UPDATE election_positions 
+      SET status = 'completed', closed_at = datetime('now')
+      WHERE id = ?
+    `).run(electionPositionId);
+  }
+
+  forceCompletePosition(electionPositionId: number, reason: string): void {
+    // Admin override to manually complete a position when stuck due to abstentions
+    console.log(`[ADMIN OVERRIDE] Forcing completion of position ${electionPositionId}. Reason: ${reason}`);
+    
+    // Mark the position as completed
     db.prepare(`
       UPDATE election_positions 
       SET status = 'completed', closed_at = datetime('now')

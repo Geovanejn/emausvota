@@ -56,6 +56,9 @@ export default function AdminPage() {
   
   const exportImageRef = useRef<ExportResultsImageHandle>(null);
   const [exportAspectRatio, setExportAspectRatio] = useState<"9:16" | "4:5">("9:16");
+  const [isForceCloseDialogOpen, setIsForceCloseDialogOpen] = useState(false);
+  const [forceCloseReason, setForceCloseReason] = useState("");
+  const [forceClosePositionId, setForceClosePositionId] = useState<number | null>(null);
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
     queryKey: ["/api/elections/active"],
@@ -403,6 +406,30 @@ export default function AdminPage() {
     },
   });
 
+  const forceClosePositionMutation = useMutation({
+    mutationFn: async (data: { electionId: number; electionPositionId: number; reason: string }) => {
+      return await apiRequest("POST", `/api/elections/${data.electionId}/positions/${data.electionPositionId}/force-close`, {
+        reason: data.reason,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Cargo fechado manualmente",
+        description: "O cargo foi encerrado com sucesso",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao fechar cargo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     logout();
     setLocation("/");
@@ -437,6 +464,22 @@ export default function AdminPage() {
     const currentYear = new Date().getFullYear();
     const nextYear = currentYear + 1;
     createElectionMutation.mutate(`Eleição ${currentYear}/${nextYear}`);
+  };
+
+  const handleForceClosePosition = () => {
+    if (!activeElection || !forceClosePositionId || !forceCloseReason.trim()) {
+      return;
+    }
+    
+    forceClosePositionMutation.mutate({
+      electionId: activeElection.id,
+      electionPositionId: forceClosePositionId,
+      reason: forceCloseReason.trim(),
+    });
+    
+    setIsForceCloseDialogOpen(false);
+    setForceCloseReason("");
+    setForceClosePositionId(null);
   };
 
   const handleCloseElection = () => {
@@ -866,6 +909,33 @@ export default function AdminPage() {
                               </div>
                             </div>
                           )}
+
+                          {/* Force close button for active positions (in case of abstentions) */}
+                          {position.status === 'active' && !position.winnerId && position.totalVoters < (presentCountData?.presentCount || 0) && activePosition && (
+                            <div className="mt-3">
+                              <div className="p-3 border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950 rounded-lg mb-2">
+                                <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                                  Votação em Andamento
+                                </p>
+                                <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                                  {position.totalVoters} de {presentCountData?.presentCount || 0} presentes votaram
+                                </p>
+                              </div>
+                              <Button
+                                variant="outline"
+                                className="w-full border-orange-500 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-950"
+                                onClick={() => {
+                                  setForceClosePositionId(activePosition.id);
+                                  setIsForceCloseDialogOpen(true);
+                                }}
+                                disabled={forceClosePositionMutation.isPending}
+                                data-testid="button-force-close-position"
+                              >
+                                <XCircle className="w-4 h-4 mr-2" />
+                                Fechar Cargo Manualmente
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))}
 
@@ -1237,6 +1307,52 @@ export default function AdminPage() {
             >
               {addMemberMutation.isPending ? "Cadastrando..." : "Cadastrar Membro"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isForceCloseDialogOpen} onOpenChange={setIsForceCloseDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fechar Cargo Manualmente</DialogTitle>
+            <DialogDescription>
+              Use esta opção apenas em caso de abstenções. Explique o motivo do fechamento manual.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="force-close-reason">Motivo do Fechamento Manual</Label>
+              <Input
+                id="force-close-reason"
+                placeholder="Ex: Membros saíram antes de votar"
+                value={forceCloseReason}
+                onChange={(e) => setForceCloseReason(e.target.value)}
+                data-testid="input-force-close-reason"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsForceCloseDialogOpen(false);
+                  setForceCloseReason("");
+                  setForceClosePositionId(null);
+                }}
+                className="flex-1"
+                data-testid="button-cancel-force-close"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleForceClosePosition}
+                className="flex-1"
+                disabled={!forceCloseReason.trim() || forceClosePositionMutation.isPending}
+                data-testid="button-confirm-force-close"
+              >
+                {forceClosePositionMutation.isPending ? "Fechando..." : "Confirmar Fechamento"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -492,6 +492,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/elections/:id/positions/:positionId/force-close", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const electionPositionId = parseInt(req.params.positionId);
+      const { reason } = req.body;
+      
+      if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
+        return res.status(400).json({ message: "É necessário fornecer um motivo para fechar manualmente" });
+      }
+      
+      // Verify this is an active position
+      const activePosition = storage.getActiveElectionPosition(electionId);
+      if (!activePosition || activePosition.id !== electionPositionId) {
+        return res.status(400).json({ message: "Esta posição não está ativa" });
+      }
+      
+      // Force complete the position
+      storage.forceCompletePosition(electionPositionId, reason);
+      
+      res.json({ message: "Cargo fechado manualmente com sucesso" });
+    } catch (error) {
+      console.error("Force close position error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao fechar cargo manualmente" 
+      });
+    }
+  });
+
   app.post("/api/candidates", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertCandidateSchema.parse(req.body);

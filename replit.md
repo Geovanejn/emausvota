@@ -31,6 +31,13 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Data cleanup between positions** - Votes cleared when opening new positions, candidates preserved
 - ✅ **State machine integrity** - Positions can only complete through automatic winner detection, not manual admin action
 - ✅ **Single active position enforcement** - Only one position can be active at a time, preventing concurrent voting
+- ✅ **Critical bug fixes (scrutiny system)**:
+  - Added UNIQUE constraint on candidates(user_id, position_id, election_id) to prevent duplicate candidates
+  - Added orphan cleanup migration to remove votes/winners referencing deleted duplicate candidates
+  - Fixed automatic election closure to wait for ALL present members to vote before declaring winner
+  - Fixed attendance list to exclude position-specific snapshots (filters WHERE election_position_id IS NULL)
+  - Fixed results display by preserving candidate history across scrutiny rounds (candidates no longer deleted when advancing to 2nd scrutiny)
+  - **Admin override for abstentions**: Added manual position closure with reason logging to handle cases where members leave early or abstain
 
 **Previous Changes (October 29, 2025)**
 - ✅ Implemented email-based authentication with verification codes
