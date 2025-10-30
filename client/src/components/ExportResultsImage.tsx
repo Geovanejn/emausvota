@@ -87,7 +87,6 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
     }));
 
     const is916 = aspectRatio === "9:16";
-    const SPACING = is916 ? 24 : 20;
 
     const WinnerCard = ({ winner }: { winner: Winner }) => (
       <div
@@ -158,7 +157,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           </p>
         </div>
 
-        {/* Photo overlapping bottom of card - moved down more */}
+        {/* Photo overlapping bottom of card */}
         <div
           style={{
             position: "absolute",
@@ -219,14 +218,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",
-            gap: `${SPACING}px`,
           }}
         >
-          {/* Title without background - outline style */}
+          {/* Title without background - outline style with hollow year */}
           <div
             style={{
               textAlign: "center",
               padding: is916 ? "20px 0" : "16px 0",
+              marginBottom: "150px",
             }}
           >
             <h1
@@ -237,29 +236,55 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 margin: 0,
                 textTransform: "uppercase",
                 letterSpacing: "4px",
-                WebkitTextStroke: "3px #1A1A1A",
                 textShadow: "2px 2px 0px rgba(0, 0, 0, 0.1)",
               }}
             >
-              ELEIÇÃO {year}
+              ELEIÇÃO{" "}
+              <span
+                style={{
+                  color: "transparent",
+                  WebkitTextStroke: "3px #1A1A1A",
+                  fontWeight: "900",
+                }}
+              >
+                {year}
+              </span>
             </h1>
           </div>
 
-          {/* Winners Grid with uniform spacing */}
+          {/* Winners Grid - first 4 cards in 2x2 */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: `${SPACING}px`,
+              gap: "40px",
+              marginBottom: "40px",
             }}
           >
-            {sortedWinners.map((winner) => (
+            {sortedWinners.slice(0, 4).map((winner) => (
               <WinnerCard key={winner.positionId} winner={winner} />
             ))}
           </div>
 
-          {/* Scripture with uniform spacing */}
-          <div>
+          {/* Fifth card (Tesoureiro) - centered */}
+          {sortedWinners[4] && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "150px",
+              }}
+            >
+              <WinnerCard winner={sortedWinners[4]} />
+            </div>
+          )}
+
+          {/* Scripture */}
+          <div
+            style={{
+              marginBottom: "150px",
+            }}
+          >
             <p
               style={{
                 fontSize: is916 ? "16px" : "14px",
@@ -276,13 +301,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             </p>
           </div>
 
-          {/* Logo - bigger and with uniform spacing */}
+          {/* Logo - 220px x 65px */}
           <div>
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                height: is916 ? "120px" : "100px",
+                width: "220px",
+                height: "65px",
                 objectFit: "contain",
                 display: "block",
                 margin: "0 auto",
