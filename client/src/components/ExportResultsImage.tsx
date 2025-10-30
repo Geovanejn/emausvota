@@ -1,7 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
 import backgroundUrl from "@assets/Fundo Layout stories_1761783891823.png";
-import logoUrl from "@assets/EMAÚS v3 sem fundo_1761783643511.png";
+import logoUrl from "@assets/EMAÚS v3 sem fundo_1761784215855.png";
 
 interface Winner {
   positionId: number;
@@ -233,7 +233,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           >
             <h1
               style={{
-                fontSize: is916 ? "80px" : "68px",
+                fontSize: is916 ? "110px" : "90px",
                 fontWeight: "900",
                 color: "#1A1A1A",
                 margin: 0,
@@ -290,7 +290,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           >
             <p
               style={{
-                fontSize: is916 ? "16px" : "14px",
+                fontSize: is916 ? "22px" : "18px",
                 color: "#4A4A4A",
                 textAlign: "center",
                 fontStyle: "italic",
@@ -304,14 +304,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             </p>
           </div>
 
-          {/* Logo - 320px x 320px */}
+          {/* Logo - 300px x 300px */}
           <div>
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                width: "320px",
-                height: "320px",
+                width: "300px",
+                height: "300px",
                 objectFit: "contain",
                 display: "block",
                 margin: "0 auto",
