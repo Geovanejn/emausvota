@@ -94,7 +94,7 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <div className="h-2 bg-primary w-full" />
       
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl">
@@ -108,8 +108,8 @@ export default function ResultsPage() {
               <>
                 <p className="text-sm sm:text-base text-muted-foreground mt-1">{results.electionName}</p>
                 {results.isActive && (
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {results.currentScrutiny}º Escrutínio • Eleição em andamento
+                  <p className="text-xs sm:text-sm text-primary font-medium">
+                    Escrutínio atual: {results.currentScrutiny}º Escrutínio • Eleição em andamento
                   </p>
                 )}
               </>

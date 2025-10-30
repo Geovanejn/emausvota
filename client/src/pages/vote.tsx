@@ -150,7 +150,7 @@ export default function VotePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <div className="h-2 bg-primary w-full" />
       
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
@@ -160,8 +160,8 @@ export default function VotePage() {
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {activeElection.name}
             </p>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {activePosition.positionName} • {activePosition.currentScrutiny}º Escrutínio
+            <p className="text-xs sm:text-sm text-primary font-medium mt-1">
+              {activePosition.positionName} • Escrutínio atual: {activePosition.currentScrutiny}º Escrutínio
             </p>
           </div>
           <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
@@ -174,7 +174,12 @@ export default function VotePage() {
           <Card className="border-border">
             <CardHeader className="p-4 sm:p-6">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-lg sm:text-xl">{activePosition.positionName}</CardTitle>
+                <div>
+                  <CardTitle className="text-lg sm:text-xl">{activePosition.positionName}</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Escrutínio atual: {activePosition.currentScrutiny}º Escrutínio
+                  </p>
+                </div>
                 {hasVoted && (
                   <div className="flex items-center gap-1 sm:gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />

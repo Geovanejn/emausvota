@@ -492,7 +492,7 @@ export default function AdminPage() {
   const isLoading = loadingElection || loadingPositions || loadingCandidates;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
       <div className="h-2 bg-primary w-full" />
       
       <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
@@ -515,7 +515,7 @@ export default function AdminPage() {
             <TabsTrigger value="history" data-testid="tab-history">Histórico</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="manage">
+          <TabsContent value="manage" className="overflow-y-auto">
             {isLoading ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">Carregando...</p>
@@ -711,7 +711,7 @@ export default function AdminPage() {
                           Cargo Ativo: {activePosition.positionName}
                         </p>
                         <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                          Escrutínio {activePosition.currentScrutiny}º de 3
+                          Escrutínio atual: {activePosition.currentScrutiny}º Escrutínio
                         </p>
                       </div>
                     )}
@@ -741,7 +741,7 @@ export default function AdminPage() {
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {pos.status === "completed" ? "Concluído" :
-                                 pos.status === "active" ? `Escrutínio ${pos.currentScrutiny}º` :
+                                 pos.status === "active" ? `Escrutínio atual: ${pos.currentScrutiny}º Escrutínio` :
                                  "Pendente"}
                               </p>
                             </div>
@@ -776,7 +776,7 @@ export default function AdminPage() {
                             <div className="space-y-3">
                               <div className="p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg">
                                 <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                                  Nenhum candidato atingiu metade+1 dos votos
+                                  Resultado: Indefinido (nenhum candidato alcançou maioria absoluta)
                                 </p>
                                 <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                                   Necessário avançar para o próximo escrutínio
@@ -789,7 +789,11 @@ export default function AdminPage() {
                                 data-testid="button-advance-scrutiny"
                               >
                                 <ArrowRight className="w-4 h-4 mr-2" />
-                                {advanceScrutinyMutation.isPending ? "Avançando..." : `Avançar para ${activePosition.currentScrutiny + 1}º Escrutínio`}
+                                {advanceScrutinyMutation.isPending 
+                                  ? "Abrindo..." 
+                                  : activePosition.currentScrutiny === 1 
+                                    ? "Abrir Segundo Escrutínio" 
+                                    : "Abrir Terceiro Escrutínio"}
                               </Button>
                             </div>
                           )}
@@ -800,15 +804,17 @@ export default function AdminPage() {
                               <div className="p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
                                 <div className="flex items-center gap-2">
                                   <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                    Cargo decidido!
-                                  </p>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                      Resultado: Concluído
+                                    </p>
+                                    {position.candidates.find(c => c.isElected) && (
+                                      <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                                        Eleito: {position.candidates.find(c => c.isElected)?.candidateName} com {position.candidates.find(c => c.isElected)?.voteCount} votos
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                {position.candidates.find(c => c.isElected) && (
-                                  <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                                    Vencedor: {position.candidates.find(c => c.isElected)?.candidateName}
-                                  </p>
-                                )}
                               </div>
                               {electionPositions.some(p => p.status === "pending") && (
                                 <Button
@@ -829,10 +835,10 @@ export default function AdminPage() {
                             <div className="space-y-3">
                               <div className="p-3 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 rounded-lg">
                                 <p className="text-sm font-medium text-red-900 dark:text-red-100">
-                                  Empate no 3º escrutínio - escolha o vencedor
+                                  Resultado: Indefinido (empate no 3º escrutínio)
                                 </p>
                                 <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                                  {position.positionName}
+                                  Escolha o vencedor manualmente
                                 </p>
                               </div>
                               <div className="space-y-2">
