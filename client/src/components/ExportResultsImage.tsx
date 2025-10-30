@@ -1,7 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
 import backgroundUrl from "@assets/Fundo Layout stories_1761783891823.png";
-import logoUrl from "@assets/EMAÚS v3 sem fundo_1761784215855.png";
+import logoUrl from "@assets/EMAÚS v3 sem fundo_1761784452767.png";
 
 interface Winner {
   positionId: number;
@@ -217,7 +217,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             paddingTop: "180px",
             paddingLeft: is916 ? "50px" : "40px",
             paddingRight: is916 ? "50px" : "40px",
-            paddingBottom: "150px",
+            paddingBottom: "80px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",
@@ -290,7 +290,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           >
             <p
               style={{
-                fontSize: is916 ? "22px" : "18px",
+                fontSize: is916 ? "26px" : "22px",
                 color: "#4A4A4A",
                 textAlign: "center",
                 fontStyle: "italic",
