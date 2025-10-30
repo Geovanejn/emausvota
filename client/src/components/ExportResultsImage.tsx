@@ -219,7 +219,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundImage: `url(${backgroundUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            paddingTop: "140px",
+            paddingTop: "110px",
             paddingLeft: is916 ? "50px" : "40px",
             paddingRight: is916 ? "50px" : "40px",
             paddingBottom: "80px",
