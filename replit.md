@@ -48,13 +48,14 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
 - ✅ **Custom design with user-provided assets:**
   - Background: Light gray textured background (user-provided image)
-  - Gradient header: linear-gradient(135deg, #FFA500 to #FFD700) with title "Eleição [YEAR]"
-  - Cards: Yellow header (#FFD84B) with position name in italic bold black
+  - Title: "ELEIÇÃO [YEAR]" bold outline black text (no background box), large 80px/68px font
+  - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold
   - Card body: White background with candidate name (uppercase bold) and vote details
-  - Photo: Circular 120px (Stories) / 100px (Feed) overlapping bottom of card with white border
-  - 2x2 + 1 grid layout (70px/60px row gap for overlapping photos)
-  - Footer: Scripture verse in italic + large UMP Emaús logo (100px Stories / 80px Feed)
-  - Typography: System fonts with bold weights for emphasis
+  - Photo: Circular 120px (Stories) / 100px (Feed) overlapping bottom of card (-50px/-45px offset)
+  - Uniform spacing: 24px/20px between all elements (cards, scripture, logo)
+  - Grid layout: 2x2 for all 5 positions with uniform card sizes
+  - Footer: Scripture verse in italic + enlarged UMP Emaús logo v3 (120px Stories / 100px Feed)
+  - Typography: System fonts with bold weights and outline effect on title
   - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
 - ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions

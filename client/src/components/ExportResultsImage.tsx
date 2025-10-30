@@ -1,7 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
 import backgroundUrl from "@assets/fundo_1761781968067.png";
-import logoUrl from "@assets/2_1761782065893.png";
+import logoUrl from "@assets/EMAÚS v3 sem fundo_1761782616082.png";
 
 interface Winner {
   positionId: number;
@@ -87,6 +87,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
     }));
 
     const is916 = aspectRatio === "9:16";
+    const SPACING = is916 ? 24 : 20;
 
     const WinnerCard = ({ winner }: { winner: Winner }) => (
       <div
@@ -96,6 +97,9 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           borderRadius: "24px",
           overflow: "visible",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          maxWidth: "480px",
+          width: "100%",
+          margin: "0 auto",
         }}
       >
         {/* Yellow header with position name */}
@@ -125,7 +129,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         {/* White body with name and vote details */}
         <div
           style={{
-            padding: is916 ? "24px 20px 70px 20px" : "20px 18px 60px 18px",
+            padding: is916 ? "24px 20px 80px 20px" : "20px 18px 70px 18px",
             textAlign: "center",
           }}
         >
@@ -154,11 +158,11 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           </p>
         </div>
 
-        {/* Photo overlapping bottom of card */}
+        {/* Photo overlapping bottom of card - moved down more */}
         <div
           style={{
             position: "absolute",
-            bottom: is916 ? "-40px" : "-35px",
+            bottom: is916 ? "-50px" : "-45px",
             left: "50%",
             transform: "translateX(-50%)",
             width: is916 ? "120px" : "100px",
@@ -215,78 +219,47 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",
-            gap: is916 ? "50px" : "40px",
+            gap: `${SPACING}px`,
           }}
         >
-          {/* Header with gradient background */}
+          {/* Title without background - outline style */}
           <div
             style={{
-              background: "linear-gradient(135deg, #FFA500 0%, #FFD700 100%)",
-              borderRadius: "20px",
-              padding: is916 ? "40px 30px" : "32px 24px",
               textAlign: "center",
-              boxShadow: "0 8px 24px rgba(255, 165, 0, 0.3)",
+              padding: is916 ? "20px 0" : "16px 0",
             }}
           >
             <h1
               style={{
-                fontSize: is916 ? "56px" : "48px",
+                fontSize: is916 ? "80px" : "68px",
                 fontWeight: "900",
-                color: "#FFFFFF",
+                color: "#1A1A1A",
                 margin: 0,
-                marginBottom: "12px",
                 textTransform: "uppercase",
-                letterSpacing: "2px",
-                textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                letterSpacing: "4px",
+                WebkitTextStroke: "3px #1A1A1A",
+                textShadow: "2px 2px 0px rgba(0, 0, 0, 0.1)",
               }}
             >
-              Eleição {year}
+              ELEIÇÃO {year}
             </h1>
-            <p
-              style={{
-                fontSize: is916 ? "18px" : "16px",
-                color: "#FFFFFF",
-                margin: 0,
-                fontWeight: "600",
-                opacity: 0.95,
-              }}
-            >
-              UMP Emaús - Resultados Oficiais
-            </p>
           </div>
 
-          {/* Winners Grid with extra bottom margin for overlapping photos */}
+          {/* Winners Grid with uniform spacing */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: is916 ? "1fr 1fr" : "1fr 1fr",
-              gap: is916 ? "70px 24px" : "60px 20px",
-              flex: 1,
+              gridTemplateColumns: "1fr 1fr",
+              gap: `${SPACING}px`,
             }}
           >
-            {sortedWinners.slice(0, 4).map((winner) => (
+            {sortedWinners.map((winner) => (
               <WinnerCard key={winner.positionId} winner={winner} />
             ))}
-            
-            {/* Tesoureiro - centered full width */}
-            {sortedWinners[4] && (
-              <div style={{ gridColumn: "1 / -1", maxWidth: "480px", margin: "0 auto", width: "100%" }}>
-                <WinnerCard winner={sortedWinners[4]} />
-              </div>
-            )}
           </div>
 
-          {/* Footer */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: is916 ? "24px" : "20px",
-              paddingTop: is916 ? "20px" : "16px",
-            }}
-          >
-            {/* Scripture */}
+          {/* Scripture with uniform spacing */}
+          <div>
             <p
               style={{
                 fontSize: is916 ? "16px" : "14px",
@@ -294,7 +267,6 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 textAlign: "center",
                 fontStyle: "italic",
                 margin: 0,
-                maxWidth: "800px",
                 lineHeight: "1.6",
               }}
             >
@@ -302,14 +274,18 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               <br />
               <span style={{ fontWeight: "600", color: "#FFA500" }}>1 Coríntios 3:9</span>
             </p>
+          </div>
 
-            {/* Logo - BIGGER */}
+          {/* Logo - bigger and with uniform spacing */}
+          <div>
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                height: is916 ? "100px" : "80px",
+                height: is916 ? "120px" : "100px",
                 objectFit: "contain",
+                display: "block",
+                margin: "0 auto",
               }}
             />
           </div>
