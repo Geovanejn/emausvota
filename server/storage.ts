@@ -145,18 +145,30 @@ export class SQLiteStorage implements IStorage {
       isMember: Boolean(row.is_member),
     }));
   }
-
+  
   deleteMember(id: number): void {
-  // Apaga votos do membro (se ele votou em alguma eleição)
+  // Apaga votos onde o usuário foi votante
   db.prepare("DELETE FROM votes WHERE voter_id = ?").run(id);
 
-  // Apaga candidaturas (se ele foi candidato em alguma eleição)
+  // Apaga votos onde o usuário foi candidato
+  db.prepare(`
+    DELETE FROM votes 
+    WHERE candidate_id IN (SELECT id FROM candidates WHERE user_id = ?)
+  `).run(id);
+
+  // Apaga vencedores ligados às candidaturas do usuário
+  db.prepare(`
+    DELETE FROM election_winners 
+    WHERE candidate_id IN (SELECT id FROM candidates WHERE user_id = ?)
+  `).run(id);
+
+  // Apaga candidaturas do usuário
   db.prepare("DELETE FROM candidates WHERE user_id = ?").run(id);
 
-  // Apaga registros de presença (attendance)
+  // Apaga registros de presença
   db.prepare("DELETE FROM election_attendance WHERE member_id = ?").run(id);
 
-  // Finalmente, remove o usuário (desde que não seja admin)
+  // Finalmente, remove o usuário (se não for admin)
   db.prepare("DELETE FROM users WHERE id = ? AND is_admin = 0").run(id);
 }
   }
