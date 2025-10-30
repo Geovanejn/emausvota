@@ -49,16 +49,20 @@ export interface IStorage {
   // Election Positions management
   getElectionPositions(electionId: number): ElectionPosition[];
   getActiveElectionPosition(electionId: number): ElectionPosition | null;
+  getElectionPositionById(id: number): ElectionPosition | null;
   advancePositionScrutiny(electionPositionId: number): void;
   openNextPosition(electionId: number): ElectionPosition | null;
+  openPosition(electionPositionId: number): ElectionPosition;
   completePosition(electionPositionId: number): void;
   
   // Election Attendance management
   getElectionAttendance(electionId: number): ElectionAttendance[];
   getPresentCount(electionId: number): number;
+  getPresentCountForPosition(electionPositionId: number): number;
   isMemberPresent(electionId: number, memberId: number): boolean;
   setMemberAttendance(electionId: number, memberId: number, isPresent: boolean): void;
   initializeAttendance(electionId: number): void;
+  createAttendanceSnapshot(electionPositionId: number): void;
   
   getAllCandidates(): Candidate[];
   getCandidatesByElection(electionId: number): CandidateWithDetails[];
@@ -215,13 +219,13 @@ export class SQLiteStorage implements IStorage {
     );
     const row = stmt.get(name) as any;
     
-    // Create election_positions for all positions
+    // Create election_positions for all positions, all starting as pending
     const positions = this.getAllPositions();
     for (let i = 0; i < positions.length; i++) {
       db.prepare(`
         INSERT INTO election_positions (election_id, position_id, order_index, status, current_scrutiny)
-        VALUES (?, ?, ?, ?, 1)
-      `).run(row.id, positions[i].id, i, i === 0 ? 'active' : 'pending');
+        VALUES (?, ?, ?, 'pending', 1)
+      `).run(row.id, positions[i].id, i);
     }
     
     return {
@@ -450,6 +454,66 @@ export class SQLiteStorage implements IStorage {
     `).run(electionPositionId);
   }
 
+  getElectionPositionById(id: number): ElectionPosition | null {
+    const stmt = db.prepare("SELECT * FROM election_positions WHERE id = ?");
+    const row = stmt.get(id) as any;
+    if (!row) return null;
+    
+    return {
+      id: row.id,
+      electionId: row.election_id,
+      positionId: row.position_id,
+      orderIndex: row.order_index,
+      status: row.status,
+      currentScrutiny: row.current_scrutiny,
+      openedAt: row.opened_at,
+      closedAt: row.closed_at,
+      createdAt: row.created_at,
+    };
+  }
+
+  openPosition(electionPositionId: number): ElectionPosition {
+    const position = this.getElectionPositionById(electionPositionId);
+    if (!position) {
+      throw new Error("Cargo não encontrado");
+    }
+
+    // Can only open pending positions
+    if (position.status !== 'pending') {
+      throw new Error("Este cargo já foi aberto ou concluído.");
+    }
+
+    // Check if there's an active position in this election
+    const activePosition = this.getActiveElectionPosition(position.electionId);
+    if (activePosition) {
+      throw new Error("Não é possível abrir um novo cargo enquanto outro ainda está ativo. Aguarde até que o cargo atual seja decidido pela votação ou complete o processo de votação.");
+    }
+
+    // Clear old votes for this position (but keep candidates)
+    db.prepare(`
+      DELETE FROM votes 
+      WHERE position_id = ? AND election_id = ?
+    `).run(position.positionId, position.electionId);
+    
+    // Clear any existing attendance snapshots for this position
+    db.prepare(`
+      DELETE FROM election_attendance 
+      WHERE election_position_id = ?
+    `).run(electionPositionId);
+
+    // Open this position
+    db.prepare(`
+      UPDATE election_positions 
+      SET status = 'active', opened_at = datetime('now'), current_scrutiny = 1
+      WHERE id = ?
+    `).run(electionPositionId);
+
+    // Create attendance snapshot for this position
+    this.createAttendanceSnapshot(electionPositionId);
+
+    return this.getElectionPositionById(electionPositionId)!;
+  }
+
   // Election Attendance management
   getElectionAttendance(electionId: number): ElectionAttendance[] {
     const stmt = db.prepare(`
@@ -461,6 +525,7 @@ export class SQLiteStorage implements IStorage {
     return rows.map(row => ({
       id: row.id,
       electionId: row.election_id,
+      electionPositionId: row.election_position_id || null,
       memberId: row.member_id,
       isPresent: Boolean(row.is_present),
       markedAt: row.marked_at,
@@ -527,6 +592,40 @@ export class SQLiteStorage implements IStorage {
           VALUES (?, ?, 0)
         `).run(electionId, member.id);
       }
+    }
+  }
+
+  getPresentCountForPosition(electionPositionId: number): number {
+    const stmt = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM election_attendance 
+      WHERE election_position_id = ? AND is_present = 1
+    `);
+    const result = stmt.get(electionPositionId) as { count: number };
+    return result.count;
+  }
+
+  createAttendanceSnapshot(electionPositionId: number): void {
+    const position = this.getElectionPositionById(electionPositionId);
+    if (!position) return;
+
+    // Get the current attendance state for this election
+    // We use a GROUP BY to get the latest attendance record for each member
+    const presentMembers = db.prepare(`
+      SELECT member_id
+      FROM election_attendance
+      WHERE election_id = ? 
+        AND election_position_id IS NULL
+        AND is_present = 1
+      GROUP BY member_id
+    `).all(position.electionId) as Array<{ member_id: number }>;
+
+    // Create attendance snapshot for this position
+    for (const { member_id } of presentMembers) {
+      db.prepare(`
+        INSERT INTO election_attendance (election_id, election_position_id, member_id, is_present, marked_at)
+        VALUES (?, ?, ?, 1, datetime('now'))
+      `).run(position.electionId, electionPositionId, member_id);
     }
   }
 
@@ -649,10 +748,14 @@ export class SQLiteStorage implements IStorage {
   }
 
   private checkAndSetAutomaticWinner(electionId: number, positionId: number, scrutinyRound: number): void {
-    // Only auto-complete for scrutiny 1 and 2 (scrutiny 3 needs all votes or admin decision)
-    if (scrutinyRound >= 3) return;
+    // Get the active election position
+    const activePosition = this.getActiveElectionPosition(electionId);
+    if (!activePosition || activePosition.positionId !== positionId) return;
 
-    const presentCount = this.getPresentCount(electionId);
+    // Get present count for this position from attendance snapshot
+    const presentCount = this.getPresentCountForPosition(activePosition.id);
+    if (presentCount === 0) return;
+
     const majorityThreshold = Math.floor(presentCount / 2) + 1;
 
     // Get all candidates for this position
@@ -667,13 +770,9 @@ export class SQLiteStorage implements IStorage {
 
       if (voteResult.count >= majorityThreshold) {
         // This candidate has reached majority - set as winner
-        const activePosition = this.getActiveElectionPosition(electionId);
-        if (activePosition && activePosition.positionId === positionId) {
-          // Set winner
-          this.setWinner(electionId, candidate.id, positionId, scrutinyRound);
-          // Complete this position
-          this.completePosition(activePosition.id);
-        }
+        this.setWinner(electionId, candidate.id, positionId, scrutinyRound);
+        // Complete this position
+        this.completePosition(activePosition.id);
         break;
       }
     }

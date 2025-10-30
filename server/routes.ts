@@ -462,6 +462,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/elections/:id/positions/:positionId/open", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
+    try {
+      const electionId = parseInt(req.params.id);
+      const electionPositionId = parseInt(req.params.positionId);
+      
+      // Check if there are any present members before opening position
+      const presentCount = storage.getPresentCount(electionId);
+      if (presentCount === 0) {
+        return res.status(400).json({ message: "Confirme primeiro a presença dos membros antes de abrir a votação." });
+      }
+      
+      // Open the specific position
+      const openedPosition = storage.openPosition(electionPositionId);
+      
+      // Join with position name
+      const allPositions = storage.getAllPositions();
+      const position = allPositions.find(p => p.id === openedPosition.positionId);
+      
+      res.json({
+        ...openedPosition,
+        positionName: position?.name || '',
+      });
+    } catch (error) {
+      console.error("Open position error:", error);
+      res.status(400).json({ 
+        message: error instanceof Error ? error.message : "Erro ao abrir cargo" 
+      });
+    }
+  });
+
   app.post("/api/candidates", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertCandidateSchema.parse(req.body);

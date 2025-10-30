@@ -357,6 +357,28 @@ export default function AdminPage() {
     },
   });
 
+  const openPositionMutation = useMutation({
+    mutationFn: async (data: { electionId: number; electionPositionId: number }) => {
+      return await apiRequest("POST", `/api/elections/${data.electionId}/positions/${data.electionPositionId}/open`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/elections", activeElection?.id, "positions", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/results/latest"] });
+      toast({
+        title: "Cargo aberto!",
+        description: "Votação iniciada para o cargo selecionado",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao abrir cargo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const setWinnerMutation = useMutation({
     mutationFn: async (data: { electionId: number; candidateId: number; positionId: number }) => {
       return await apiRequest("PATCH", `/api/elections/${data.electionId}/set-winner`, {
@@ -673,28 +695,30 @@ export default function AdminPage() {
               </Card>
             )}
 
-            {activeElection && results && activePosition && (
+            {activeElection && results && (
               <Card className="border-blue-500">
                 <CardHeader>
-                  <CardTitle className="text-xl">Gerenciamento de Votação Sequencial</CardTitle>
+                  <CardTitle className="text-xl">Gerenciamento de Votação por Cargo</CardTitle>
                   <CardDescription>
-                    Controle o processo de votação cargo por cargo
+                    Abra a votação para cada cargo individualmente
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                        Cargo Ativo: {activePosition.positionName}
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                        Escrutínio {activePosition.currentScrutiny}º de 3
-                      </p>
-                    </div>
+                    {activePosition && (
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          Cargo Ativo: {activePosition.positionName}
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                          Escrutínio {activePosition.currentScrutiny}º de 3
+                        </p>
+                      </div>
+                    )}
 
-                    {/* Show progress of all positions */}
+                    {/* Show progress of all positions with individual open buttons */}
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Progresso dos Cargos:</p>
+                      <p className="text-sm font-medium">Cargos da Eleição:</p>
                       {electionPositions.map((pos) => (
                         <div
                           key={pos.id}
@@ -706,8 +730,8 @@ export default function AdminPage() {
                               : "border-border bg-muted/30"
                           }`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
                               <p className={`font-medium ${
                                 pos.status === "active" ? "text-blue-900 dark:text-blue-100" :
                                 pos.status === "completed" ? "text-green-900 dark:text-green-100" :
@@ -718,9 +742,20 @@ export default function AdminPage() {
                               <p className="text-xs text-muted-foreground mt-1">
                                 {pos.status === "completed" ? "Concluído" :
                                  pos.status === "active" ? `Escrutínio ${pos.currentScrutiny}º` :
-                                 "Aguardando"}
+                                 "Pendente"}
                               </p>
                             </div>
+                            {pos.status === "pending" && (
+                              <Button
+                                size="sm"
+                                onClick={() => openPositionMutation.mutate({ electionId: activeElection.id, electionPositionId: pos.id })}
+                                disabled={openPositionMutation.isPending}
+                                data-testid={`button-open-position-${pos.id}`}
+                              >
+                                <PlayCircle className="w-4 h-4 mr-1" />
+                                {openPositionMutation.isPending ? "Abrindo..." : "Abrir"}
+                              </Button>
+                            )}
                             {pos.status === "active" && (
                               <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             )}
@@ -733,7 +768,7 @@ export default function AdminPage() {
                     </div>
 
                     {/* Show active position result */}
-                    {results.positions
+                    {activePosition && results.positions
                       .filter(p => p.positionId === activePosition.positionId)
                       .map(position => (
                         <div key={position.positionId}>

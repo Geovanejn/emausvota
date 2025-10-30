@@ -102,10 +102,11 @@ export const insertElectionPositionSchema = createInsertSchema(electionPositions
 export type InsertElectionPosition = z.infer<typeof insertElectionPositionSchema>;
 export type ElectionPosition = typeof electionPositions.$inferSelect;
 
-// Election Attendance table - tracks which members are present for voting
+// Election Attendance table - tracks which members are present for voting per position
 export const electionAttendance = sqliteTable("election_attendance", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   electionId: integer("election_id").notNull().references(() => elections.id),
+  electionPositionId: integer("election_position_id").references(() => electionPositions.id), // Link to specific position opening
   memberId: integer("member_id").notNull().references(() => users.id),
   isPresent: integer("is_present", { mode: "boolean" }).notNull().default(false),
   markedAt: text("marked_at"),

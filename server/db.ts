@@ -220,6 +220,15 @@ export function initializeDatabase() {
       `);
       console.log("Recreated votes table with new UNIQUE constraint");
     }
+
+    // Check and add columns to election_attendance table
+    const attendanceColumns = sqlite.prepare("PRAGMA table_info(election_attendance)").all() as Array<{ name: string }>;
+    const attendanceColumnNames = attendanceColumns.map(col => col.name);
+    
+    if (!attendanceColumnNames.includes('election_position_id')) {
+      sqlite.exec("ALTER TABLE election_attendance ADD COLUMN election_position_id INTEGER REFERENCES election_positions(id)");
+      console.log("Added election_position_id column to election_attendance table");
+    }
   } catch (error) {
     console.error("Migration error:", error);
   }
