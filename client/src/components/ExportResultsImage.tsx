@@ -105,7 +105,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         <div
           style={{
             backgroundColor: "#FFD84B",
-            padding: is916 ? "10px 20px" : "8px 18px",
+            padding: is916 ? "0px 20px" : "0px 18px",
             borderRadius: "24px 24px 0 0",
             textAlign: "center",
             display: "flex",
@@ -123,6 +123,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               margin: 0,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
+              transform: "translateY(-2px)",
             }}
           >
             {winner.positionName}
@@ -218,7 +219,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundImage: `url(${backgroundUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            paddingTop: "180px",
+            paddingTop: "140px",
             paddingLeft: is916 ? "50px" : "40px",
             paddingRight: is916 ? "50px" : "40px",
             paddingBottom: "80px",
