@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure full viewport height and scrolling on mobile */
+html, body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  height: 100%;
+}
+
+/* Fix mobile viewport height issues */
+#root {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);

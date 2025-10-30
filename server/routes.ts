@@ -433,6 +433,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/elections/:id/positions/open-next", authenticateToken, requireAdmin, async (req: AuthRequest, res) => {
     try {
       const electionId = parseInt(req.params.id);
+      
+      // Check if there are any present members before opening position
+      const presentCount = storage.getPresentCount(electionId);
+      if (presentCount === 0) {
+        return res.status(400).json({ message: "Registre primeiro a presença dos membros antes de abrir a votação" });
+      }
+      
       const nextPosition = storage.openNextPosition(electionId);
       
       if (!nextPosition) {
@@ -468,12 +475,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.isAdmin) {
         return res.status(400).json({ message: "Administradores não podem ser candidatos" });
       }
+
+      // Check if user is present
+      const isPresent = storage.isMemberPresent(validatedData.electionId, validatedData.userId);
+      if (!isPresent) {
+        return res.status(400).json({ message: "Apenas membros com presença confirmada podem ser candidatos" });
+      }
       
       // Validate that the user is not already a winner in this election
       const winners = storage.getElectionWinners(validatedData.electionId);
       const isAlreadyWinner = winners.some(w => w.userId === validatedData.userId);
       if (isAlreadyWinner) {
         return res.status(400).json({ message: "Este membro já foi eleito para um cargo nesta eleição" });
+      }
+
+      // Check if candidate is already added to this position
+      const existingCandidates = storage.getCandidatesByPosition(validatedData.positionId, validatedData.electionId);
+      const isDuplicate = existingCandidates.some(c => c.userId === validatedData.userId);
+      if (isDuplicate) {
+        return res.status(400).json({ message: "Este candidato já foi adicionado para este cargo" });
+      }
+
+      // Check if the position is active before adding candidates
+      const activePosition = storage.getActiveElectionPosition(validatedData.electionId);
+      if (!activePosition || activePosition.positionId !== validatedData.positionId) {
+        return res.status(400).json({ message: "A votação para este cargo ainda não foi aberta" });
       }
       
       const candidate = storage.createCandidate(validatedData);
@@ -577,6 +603,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!candidateId || !positionId || !electionId) {
         return res.status(400).json({ message: "Dados incompletos" });
+      }
+
+      // Check if voter is present
+      const isPresent = storage.isMemberPresent(electionId, voterId);
+      if (!isPresent) {
+        return res.status(403).json({ message: "Apenas membros com presença confirmada podem votar" });
       }
 
       // Get active position for this election to determine scrutiny round

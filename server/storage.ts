@@ -56,6 +56,7 @@ export interface IStorage {
   // Election Attendance management
   getElectionAttendance(electionId: number): ElectionAttendance[];
   getPresentCount(electionId: number): number;
+  isMemberPresent(electionId: number, memberId: number): boolean;
   setMemberAttendance(electionId: number, memberId: number, isPresent: boolean): void;
   initializeAttendance(electionId: number): void;
   
@@ -63,6 +64,7 @@ export interface IStorage {
   getCandidatesByElection(electionId: number): CandidateWithDetails[];
   getCandidatesByPosition(positionId: number, electionId: number): Candidate[];
   createCandidate(candidate: InsertCandidate): Candidate;
+  clearCandidatesForPosition(positionId: number, electionId: number): void;
   
   createVote(vote: InsertVote): Vote;
   hasUserVoted(voterId: number, positionId: number, electionId: number, scrutinyRound: number): boolean;
@@ -187,6 +189,7 @@ export class SQLiteStorage implements IStorage {
       name: row.name,
       isActive: Boolean(row.is_active),
       createdAt: row.created_at,
+      closedAt: row.closed_at,
     };
   }
 
@@ -200,6 +203,7 @@ export class SQLiteStorage implements IStorage {
       name: row.name,
       isActive: Boolean(row.is_active),
       createdAt: row.created_at,
+      closedAt: row.closed_at,
     };
   }
 
@@ -225,6 +229,7 @@ export class SQLiteStorage implements IStorage {
       name: row.name,
       isActive: Boolean(row.is_active),
       createdAt: row.created_at,
+      closedAt: row.closed_at,
     };
   }
 
@@ -237,6 +242,15 @@ export class SQLiteStorage implements IStorage {
   }
 
   finalizeElection(id: number): void {
+    // Clear all candidates and votes for this election
+    db.prepare(`
+      DELETE FROM votes WHERE election_id = ?
+    `).run(id);
+    
+    db.prepare(`
+      DELETE FROM candidates WHERE election_id = ?
+    `).run(id);
+    
     const stmt = db.prepare("UPDATE elections SET is_active = 0, closed_at = datetime('now') WHERE id = ?");
     stmt.run(id);
     
@@ -320,11 +334,48 @@ export class SQLiteStorage implements IStorage {
   }
 
   advancePositionScrutiny(electionPositionId: number): void {
+    // Get the position details before updating
+    const positionStmt = db.prepare("SELECT * FROM election_positions WHERE id = ?");
+    const position = positionStmt.get(electionPositionId) as any;
+    
+    if (!position) return;
+    
+    const newScrutiny = position.current_scrutiny + 1;
+    
+    // If advancing to 2nd scrutiny, clear all candidates so admin can select new ones
+    if (newScrutiny === 2) {
+      this.clearCandidatesForPosition(position.position_id, position.election_id);
+    }
+    // If advancing to 3rd scrutiny, keep only top 2 candidates from 2nd scrutiny
+    else if (newScrutiny === 3) {
+      // Get vote counts for all candidates in 2nd scrutiny
+      const candidatesStmt = db.prepare(`
+        SELECT c.id, c.user_id, COUNT(v.id) as vote_count
+        FROM candidates c
+        LEFT JOIN votes v ON v.candidate_id = c.id AND v.scrutiny_round = 2
+        WHERE c.position_id = ? AND c.election_id = ?
+        GROUP BY c.id
+        ORDER BY vote_count DESC
+        LIMIT 2
+      `);
+      const topCandidates = candidatesStmt.all(position.position_id, position.election_id) as any[];
+      
+      if (topCandidates.length === 2) {
+        // Keep only these top 2 candidates, remove all others
+        const candidateIds = topCandidates.map((c: any) => c.id);
+        db.prepare(`
+          DELETE FROM candidates 
+          WHERE position_id = ? AND election_id = ? AND id NOT IN (?, ?)
+        `).run(position.position_id, position.election_id, candidateIds[0], candidateIds[1]);
+      }
+    }
+    
+    // Update scrutiny
     db.prepare(`
       UPDATE election_positions 
-      SET current_scrutiny = current_scrutiny + 1 
+      SET current_scrutiny = ? 
       WHERE id = ? AND current_scrutiny < 3
-    `).run(electionPositionId);
+    `).run(newScrutiny, electionPositionId);
   }
 
   openNextPosition(electionId: number): ElectionPosition | null {
@@ -342,6 +393,9 @@ export class SQLiteStorage implements IStorage {
       const nextRow = nextStmt.get(electionId) as any;
       
       if (nextRow) {
+        // Clear any existing candidates for this new position before opening
+        this.clearCandidatesForPosition(nextRow.position_id, electionId);
+        
         db.prepare(`
           UPDATE election_positions 
           SET status = 'active', opened_at = datetime('now')
@@ -354,7 +408,9 @@ export class SQLiteStorage implements IStorage {
       return null;
     }
     
-    // Complete current position and open next one
+    // Complete current position and clear its data
+    this.clearCandidatesForPosition(currentActive.positionId, electionId);
+    
     db.prepare(`
       UPDATE election_positions 
       SET status = 'completed', closed_at = datetime('now')
@@ -371,6 +427,9 @@ export class SQLiteStorage implements IStorage {
     const nextRow = nextStmt.get(electionId, currentActive.orderIndex) as any;
     
     if (nextRow) {
+      // Clear any existing candidates for this new position before opening
+      this.clearCandidatesForPosition(nextRow.position_id, electionId);
+      
       db.prepare(`
         UPDATE election_positions 
         SET status = 'active', opened_at = datetime('now')
@@ -417,6 +476,16 @@ export class SQLiteStorage implements IStorage {
     `);
     const result = stmt.get(electionId) as { count: number };
     return result.count;
+  }
+
+  isMemberPresent(electionId: number, memberId: number): boolean {
+    const stmt = db.prepare(`
+      SELECT is_present 
+      FROM election_attendance 
+      WHERE election_id = ? AND member_id = ?
+    `);
+    const result = stmt.get(electionId, memberId) as any;
+    return result ? Boolean(result.is_present) : false;
   }
 
   setMemberAttendance(electionId: number, memberId: number, isPresent: boolean): void {
@@ -536,6 +605,21 @@ export class SQLiteStorage implements IStorage {
     };
   }
 
+  clearCandidatesForPosition(positionId: number, electionId: number): void {
+    // Delete votes for candidates of this position first
+    db.prepare(`
+      DELETE FROM votes 
+      WHERE candidate_id IN (
+        SELECT id FROM candidates WHERE position_id = ? AND election_id = ?
+      )
+    `).run(positionId, electionId);
+    
+    // Then delete the candidates
+    db.prepare(
+      "DELETE FROM candidates WHERE position_id = ? AND election_id = ?"
+    ).run(positionId, electionId);
+  }
+
   createVote(vote: InsertVote): Vote {
     const stmt = db.prepare(
       "INSERT INTO votes (voter_id, candidate_id, position_id, election_id, scrutiny_round) VALUES (?, ?, ?, ?, ?) RETURNING *"
@@ -548,7 +632,7 @@ export class SQLiteStorage implements IStorage {
       vote.scrutinyRound || 1
     ) as any;
     
-    return {
+    const createdVote = {
       id: row.id,
       voterId: row.voter_id,
       candidateId: row.candidate_id,
@@ -557,6 +641,42 @@ export class SQLiteStorage implements IStorage {
       scrutinyRound: row.scrutiny_round,
       createdAt: row.created_at,
     };
+
+    // Check for automatic winner after vote
+    this.checkAndSetAutomaticWinner(vote.electionId, vote.positionId, vote.scrutinyRound || 1);
+    
+    return createdVote;
+  }
+
+  private checkAndSetAutomaticWinner(electionId: number, positionId: number, scrutinyRound: number): void {
+    // Only auto-complete for scrutiny 1 and 2 (scrutiny 3 needs all votes or admin decision)
+    if (scrutinyRound >= 3) return;
+
+    const presentCount = this.getPresentCount(electionId);
+    const majorityThreshold = Math.floor(presentCount / 2) + 1;
+
+    // Get all candidates for this position
+    const candidates = this.getCandidatesByPosition(positionId, electionId);
+
+    // Count votes for each candidate in this scrutiny
+    for (const candidate of candidates) {
+      const voteStmt = db.prepare(
+        "SELECT COUNT(*) as count FROM votes WHERE candidate_id = ? AND election_id = ? AND scrutiny_round = ?"
+      );
+      const voteResult = voteStmt.get(candidate.id, electionId, scrutinyRound) as { count: number };
+
+      if (voteResult.count >= majorityThreshold) {
+        // This candidate has reached majority - set as winner
+        const activePosition = this.getActiveElectionPosition(electionId);
+        if (activePosition && activePosition.positionId === positionId) {
+          // Set winner
+          this.setWinner(electionId, candidate.id, positionId, scrutinyRound);
+          // Complete this position
+          this.completePosition(activePosition.id);
+        }
+        break;
+      }
+    }
   }
 
   hasUserVoted(voterId: number, positionId: number, electionId: number, scrutinyRound: number): boolean {
@@ -580,6 +700,8 @@ export class SQLiteStorage implements IStorage {
     const results: ElectionResults = {
       electionId: election.id,
       electionName: election.name,
+      isActive: election.isActive,
+      currentScrutiny: electionPositions.find(ep => ep.status === 'active')?.currentScrutiny || 1,
       presentCount,
       positions: [],
     };

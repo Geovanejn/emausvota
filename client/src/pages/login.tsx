@@ -118,9 +118,11 @@ export default function LoginPage() {
         <div className="max-w-md mx-auto mt-8 sm:mt-16">
           <div className="text-center mb-6 sm:mb-8">
             <div className="flex justify-center mb-3 sm:mb-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center">
-                <UserCircle className="w-8 h-8 sm:w-10 sm:h-10 text-primary-foreground" />
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="Emaús Vota Logo" 
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+              />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Emaús Vota</h1>
             <p className="text-sm sm:text-base text-muted-foreground">Sistema de votação da UMP Emaús</p>
