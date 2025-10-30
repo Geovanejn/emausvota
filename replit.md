@@ -52,9 +52,9 @@ Preferred communication style: Simple, everyday language.
   - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold
   - Card body: White background with candidate name (uppercase bold) and vote details
   - Photo: Circular 120px (Stories) / 100px (Feed) overlapping bottom of card (-50px/-45px offset)
-  - Spacing: 40px between cards, 150px title→cards, 150px cards→verse, 150px verse→logo
+  - Spacing: 80px between cards, 180px title→cards, 180px cards→verse, 180px verse→logo
   - Grid layout: 2x2 for first 4 positions, 5th position (Tesoureiro) centered below
-  - Footer: Scripture verse in italic + UMP Emaús logo v3 (220px × 65px)
+  - Footer: Scripture verse in italic + UMP Emaús logo v3 (320px × 320px)
   - Typography: System fonts with bold weights, outline effect on year
   - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint

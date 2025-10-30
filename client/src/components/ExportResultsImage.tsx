@@ -1,7 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
 import backgroundUrl from "@assets/fundo_1761781968067.png";
-import logoUrl from "@assets/EMAÚS v3 sem fundo_1761782616082.png";
+import logoUrl from "@assets/EMAÚS v3 sem fundo_1761783643511.png";
 
 interface Winner {
   positionId: number;
@@ -225,7 +225,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               textAlign: "center",
               padding: is916 ? "20px 0" : "16px 0",
-              marginBottom: "150px",
+              marginBottom: "180px",
             }}
           >
             <h1
@@ -257,8 +257,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "40px",
-              marginBottom: "40px",
+              gap: "80px",
+              marginBottom: "80px",
             }}
           >
             {sortedWinners.slice(0, 4).map((winner) => (
@@ -272,7 +272,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               style={{
                 display: "flex",
                 justifyContent: "center",
-                marginBottom: "150px",
+                marginBottom: "180px",
               }}
             >
               <WinnerCard winner={sortedWinners[4]} />
@@ -282,7 +282,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           {/* Scripture */}
           <div
             style={{
-              marginBottom: "150px",
+              marginBottom: "180px",
             }}
           >
             <p
@@ -301,14 +301,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             </p>
           </div>
 
-          {/* Logo - 220px x 65px */}
+          {/* Logo - 320px x 320px */}
           <div>
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                width: "220px",
-                height: "65px",
+                width: "320px",
+                height: "320px",
                 objectFit: "contain",
                 display: "block",
                 margin: "0 auto",
