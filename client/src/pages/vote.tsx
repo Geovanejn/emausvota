@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { CheckCircle, LogOut, Vote } from "lucide-react";
+import { CheckCircle, LogOut, Vote, ChartBar } from "lucide-react";
 import { useLocation } from "wouter";
 import type { Election, Position } from "@shared/schema";
 
@@ -106,10 +106,16 @@ export default function VotePage() {
         <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold">Votação</h1>
-            <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
+            <div className="flex gap-2 self-end sm:self-auto">
+              <Button variant="outline" onClick={() => setLocation("/results")} data-testid="button-results">
+                <ChartBar className="w-4 h-4 mr-2" />
+                Resultados
+              </Button>
+              <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
           <Card>
             <CardHeader>
@@ -131,10 +137,16 @@ export default function VotePage() {
         <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold">Votação</h1>
-            <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
+            <div className="flex gap-2 self-end sm:self-auto">
+              <Button variant="outline" onClick={() => setLocation("/results")} data-testid="button-results">
+                <ChartBar className="w-4 h-4 mr-2" />
+                Resultados
+              </Button>
+              <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
           <Card>
             <CardHeader>
@@ -164,10 +176,16 @@ export default function VotePage() {
               {activePosition.positionName} • Escrutínio atual: {activePosition.currentScrutiny}º Escrutínio
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-logout" className="self-end sm:self-auto">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex gap-2 self-end sm:self-auto">
+            <Button variant="outline" onClick={() => setLocation("/results")} data-testid="button-results">
+              <ChartBar className="w-4 h-4 mr-2" />
+              Resultados
+            </Button>
+            <Button variant="outline" onClick={handleLogout} data-testid="button-logout">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-6 sm:space-y-8">
