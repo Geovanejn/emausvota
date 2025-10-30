@@ -50,12 +50,12 @@ Preferred communication style: Simple, everyday language.
   - Background: "Fundo Layout stories" textured background (user-provided image)
   - Padding: 180px top, 80px bottom, 50px left/right (Stories)
   - Title: "ELEIÇÃO [YEAR]" bold black text with hollow/outline year (110px/90px font, no background)
-  - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold
+  - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold, centered with flexbox
   - Card body: White background with candidate name (uppercase bold) and vote details
   - Photo: Circular 120px (Stories) / 100px (Feed) overlapping bottom of card (-50px/-45px offset)
   - Spacing: 60px between cards, 120px title→cards, 120px cards→verse, 100px verse→logo
   - Grid layout: 2x2 for first 4 positions, 5th position (Tesoureiro) centered below
-  - Footer: Scripture verse in italic (26px/22px font) + UMP Emaús logo v3 (300px × 300px, 80px from bottom)
+  - Footer: Scripture verse in 3 lines with italic (28px/24px font) + UMP Emaús logo v3 (300px × 300px, 80px from bottom)
   - Typography: System fonts with bold weights, outline effect on year
   - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
   - Layout optimized to fit within 1920px canvas height

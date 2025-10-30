@@ -105,9 +105,13 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         <div
           style={{
             backgroundColor: "#FFD84B",
-            padding: is916 ? "16px 20px" : "14px 18px",
+            padding: is916 ? "10px 20px" : "8px 18px",
             borderRadius: "24px 24px 0 0",
             textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: is916 ? "50px" : "46px",
           }}
         >
           <h3
@@ -290,18 +294,17 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           >
             <p
               style={{
-                fontSize: is916 ? "26px" : "22px",
+                fontSize: is916 ? "28px" : "24px",
                 color: "#4A4A4A",
                 textAlign: "center",
                 fontStyle: "italic",
                 margin: 0,
-                lineHeight: "1.6",
+                lineHeight: "1.5",
               }}
-            >
-              "Porque de Deus somos cooperadores; lavoura de Deus, edifício de Deus sois vós."
-              <br />
-              <span style={{ fontWeight: "600", color: "#FFA500" }}>1 Coríntios 3:9</span>
-            </p>
+              dangerouslySetInnerHTML={{
+                __html: `"Porque de Deus somos cooperadores;<br/>lavoura de Deus, edifício de Deus sois vós."<br/><span style="font-weight: 600; color: #FFA500;">1 Coríntios 3:9</span>`
+              }}
+            />
           </div>
 
           {/* Logo - 300px x 300px */}
