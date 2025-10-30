@@ -1,7 +1,7 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
 import backgroundUrl from "@assets/Fundo Layout stories_1761783891823.png";
-import logoUrl from "@assets/EMAÚS v3 sem fundo_1761784452767.png";
+import logoUrl from "@assets/EMAÚS v3 sem fundo_1761784762341.png";
 
 interface Winner {
   positionId: number;
@@ -227,8 +227,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           <div
             style={{
               textAlign: "center",
-              padding: is916 ? "20px 0" : "16px 0",
-              marginBottom: "180px",
+              padding: is916 ? "10px 0" : "8px 0",
+              marginBottom: "120px",
             }}
           >
             <h1
@@ -260,8 +260,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "80px",
-              marginBottom: "80px",
+              gap: "60px",
+              marginBottom: "60px",
             }}
           >
             {sortedWinners.slice(0, 4).map((winner) => (
@@ -275,7 +275,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               style={{
                 display: "flex",
                 justifyContent: "center",
-                marginBottom: "180px",
+                marginBottom: "120px",
               }}
             >
               <WinnerCard winner={sortedWinners[4]} />
@@ -285,7 +285,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           {/* Scripture */}
           <div
             style={{
-              marginBottom: "180px",
+              marginBottom: "100px",
             }}
           >
             <p
