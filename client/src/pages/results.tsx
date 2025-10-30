@@ -216,6 +216,29 @@ export default function ResultsPage() {
                     </span>
                   </h2>
 
+                  {/* Show position status: Concluído or Indefinido */}
+                  {position.winnerId ? (
+                    <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                        Resultado: Concluído
+                      </p>
+                      {(() => {
+                        const electedCandidate = position.candidates.find(c => c.candidateId === position.winnerId);
+                        return electedCandidate ? (
+                          <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                            Eleito: {electedCandidate.candidateName} com {electedCandidate.voteCount} votos
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : results.isActive ? (
+                    <div className="mb-4 p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                        Resultado: Indefinido (nenhum candidato alcançou maioria absoluta)
+                      </p>
+                    </div>
+                  ) : null}
+
                   <div className="space-y-3">
                     {sortedCandidates.map((candidate, index) => {
                       const isWinner = index === 0 && candidate.voteCount > 0;
