@@ -123,7 +123,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               margin: 0,
               textTransform: "uppercase",
               letterSpacing: "0.5px",
-              transform: "translateY(-22px)",
+              transform: "translateY(-7px)",
             }}
           >
             {winner.positionName}
