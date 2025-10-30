@@ -219,10 +219,10 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundImage: `url(${backgroundUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            paddingTop: "110px",
+            paddingTop: is916 ? "110px" : "50px",
             paddingLeft: is916 ? "50px" : "40px",
             paddingRight: is916 ? "50px" : "40px",
-            paddingBottom: "80px",
+            paddingBottom: is916 ? "80px" : "50px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",
@@ -233,7 +233,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               textAlign: "center",
               padding: is916 ? "10px 0" : "8px 0",
-              marginBottom: "120px",
+              marginBottom: is916 ? "120px" : "50px",
             }}
           >
             <h1
@@ -280,7 +280,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               style={{
                 display: "flex",
                 justifyContent: "center",
-                marginBottom: "120px",
+                marginBottom: is916 ? "120px" : "50px",
               }}
             >
               <WinnerCard winner={sortedWinners[4]} />
@@ -290,7 +290,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           {/* Scripture */}
           <div
             style={{
-              marginBottom: "100px",
+              marginBottom: is916 ? "100px" : "50px",
             }}
           >
             <p
