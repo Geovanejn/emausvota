@@ -49,7 +49,7 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Custom design with user-provided assets:**
   - Background: "Fundo Layout stories" textured background (user-provided image)
   - Padding (Stories 9:16): 110px top, 80px bottom, 50px left/right
-  - Padding (Feed 4:5): 50px top, 50px bottom, 40px left/right
+  - Padding (Feed 4:5): 50px top, 30px bottom, 40px left/right
   - Title: "ELEIÇÃO [YEAR]" bold black text with hollow/outline year (110px/90px font, no background)
   - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold, positioned with translateY(-7px)
   - Card body: White background with candidate name (uppercase bold) and vote details
