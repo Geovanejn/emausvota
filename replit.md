@@ -24,6 +24,16 @@ Preferred communication style: Simple, everyday language.
 - Portuguese language interface
 
 **Recent Changes (October 30, 2025)**
+- ✅ **Real-time results system** - Complete redesign of results display with live updates
+  - **Automatic polling**: Results update every 3 seconds during active elections
+  - **Candidates visible immediately**: All candidates appear on results page as soon as they're added, even with 0 votes
+  - **Live vote tracking**: Vote counts update in real-time as members vote
+  - **All positions always visible**: Shows all 5 positions (pending, active, completed) simultaneously for full transparency
+  - **Clear status indicators**: Color-coded badges show each position's state (Aguardando Votação, Em Votação, Concluído)
+  - **Smart sorting**: Positions displayed in voting order (orderIndex), candidates sorted by vote count
+  - **Visual hierarchy**: Leading candidates highlighted in blue during voting, elected candidates in green
+  - **Member access to results**: Added "Resultados" button on all vote page states so members can view results anytime
+  - **Share button timing**: Export results button appears only when election is completely finalized (isActive = false)
 - ✅ **Per-position election control** - Each position opens individually with manual admin control
 - ✅ **Attendance confirmation requirement** - Admin must confirm attendance before opening any position
 - ✅ **Position-specific attendance snapshots** - Each position captures its own attendance count at opening time
