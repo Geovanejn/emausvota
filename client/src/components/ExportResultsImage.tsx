@@ -308,14 +308,14 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             />
           </div>
 
-          {/* Logo - 300px x 300px */}
+          {/* Logo */}
           <div>
             <img
               src={logoUrl}
               alt="UMP Emaús"
               style={{
-                width: "300px",
-                height: "300px",
+                width: is916 ? "300px" : "200px",
+                height: is916 ? "300px" : "200px",
                 objectFit: "contain",
                 display: "block",
                 margin: "0 auto",

@@ -57,7 +57,7 @@ Preferred communication style: Simple, everyday language.
   - Spacing (Stories 9:16): 60px between cards, 120px title→cards, 120px cards→verse, 100px verse→logo
   - Spacing (Feed 4:5): 60px between cards, 100px title→cards, 100px cards→verse, 50px verse→logo
   - Grid layout: 2x2 for first 4 positions, 5th position (Tesoureiro) centered below
-  - Footer: Scripture verse in 3 lines with italic (28px/24px font) + UMP Emaús logo v3 (300px × 300px)
+  - Footer: Scripture verse in 3 lines with italic (28px/24px font) + UMP Emaús logo v3 (300px × 300px Stories / 200px × 200px Feed)
   - Typography: System fonts with bold weights, outline effect on year
   - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
   - Layout optimized to fit within 1920px (Stories) and 1350px (Feed) canvas heights
