@@ -147,8 +147,18 @@ export class SQLiteStorage implements IStorage {
   }
 
   deleteMember(id: number): void {
-    const stmt = db.prepare("DELETE FROM users WHERE id = ? AND is_admin = 0");
-    stmt.run(id);
+  // Apaga votos do membro (se ele votou em alguma eleição)
+  db.prepare("DELETE FROM votes WHERE voter_id = ?").run(id);
+
+  // Apaga candidaturas (se ele foi candidato em alguma eleição)
+  db.prepare("DELETE FROM candidates WHERE user_id = ?").run(id);
+
+  // Apaga registros de presença (attendance)
+  db.prepare("DELETE FROM election_attendance WHERE member_id = ?").run(id);
+
+  // Finalmente, remove o usuário (desde que não seja admin)
+  db.prepare("DELETE FROM users WHERE id = ? AND is_admin = 0").run(id);
+}
   }
 
   getAllPositions(): Position[] {
