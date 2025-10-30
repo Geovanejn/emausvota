@@ -23,7 +23,16 @@ Preferred communication style: Simple, everyday language.
 - Responsive UI following civic tech design principles
 - Portuguese language interface
 
-**Recent Changes (October 29, 2025)**
+**Recent Changes (October 30, 2025)**
+- ✅ **Per-position election control** - Each position opens individually with manual admin control
+- ✅ **Attendance confirmation requirement** - Admin must confirm attendance before opening any position
+- ✅ **Position-specific attendance snapshots** - Each position captures its own attendance count at opening time
+- ✅ **Automatic majority-based closing** - Positions automatically close when a candidate reaches half+1 votes based on attendance snapshot
+- ✅ **Data cleanup between positions** - Votes cleared when opening new positions, candidates preserved
+- ✅ **State machine integrity** - Positions can only complete through automatic winner detection, not manual admin action
+- ✅ **Single active position enforcement** - Only one position can be active at a time, preventing concurrent voting
+
+**Previous Changes (October 29, 2025)**
 - ✅ Implemented email-based authentication with verification codes
 - ✅ Removed public registration - only admin can add members
 - ✅ Added verification_codes table to database
