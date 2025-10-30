@@ -93,10 +93,10 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         style={{
           position: "relative",
           backgroundColor: "#FFFFFF",
-          borderRadius: "24px",
+          borderRadius: is916 ? "24px" : "20px",
           overflow: "visible",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-          maxWidth: "480px",
+          maxWidth: is916 ? "480px" : "420px",
           width: "100%",
           margin: "0 auto",
         }}
@@ -105,18 +105,18 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         <div
           style={{
             backgroundColor: "#FFD84B",
-            padding: is916 ? "0px 20px" : "0px 18px",
-            borderRadius: "24px 24px 0 0",
+            padding: is916 ? "0px 20px" : "0px 16px",
+            borderRadius: is916 ? "24px 24px 0 0" : "20px 20px 0 0",
             textAlign: "center",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            minHeight: is916 ? "50px" : "46px",
+            minHeight: is916 ? "50px" : "40px",
           }}
         >
           <h3
             style={{
-              fontSize: is916 ? "22px" : "20px",
+              fontSize: is916 ? "22px" : "18px",
               fontWeight: "800",
               fontStyle: "italic",
               color: "#1A1A1A",
@@ -133,17 +133,17 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         {/* White body with name and vote details */}
         <div
           style={{
-            padding: is916 ? "24px 20px 80px 20px" : "20px 18px 70px 18px",
+            padding: is916 ? "24px 20px 80px 20px" : "16px 16px 60px 16px",
             textAlign: "center",
           }}
         >
           <h2
             style={{
-              fontSize: is916 ? "26px" : "22px",
+              fontSize: is916 ? "26px" : "20px",
               fontWeight: "800",
               color: "#1A1A1A",
               margin: 0,
-              marginBottom: is916 ? "12px" : "10px",
+              marginBottom: is916 ? "12px" : "8px",
               textTransform: "uppercase",
               lineHeight: "1.2",
             }}
@@ -152,7 +152,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
           </h2>
           <p
             style={{
-              fontSize: is916 ? "16px" : "14px",
+              fontSize: is916 ? "16px" : "13px",
               color: "#4A4A4A",
               margin: 0,
               fontWeight: "500",
@@ -166,15 +166,15 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
         <div
           style={{
             position: "absolute",
-            bottom: is916 ? "-50px" : "-45px",
+            bottom: is916 ? "-50px" : "-40px",
             left: "50%",
             transform: "translateX(-50%)",
-            width: is916 ? "120px" : "100px",
-            height: is916 ? "120px" : "100px",
+            width: is916 ? "120px" : "90px",
+            height: is916 ? "120px" : "90px",
             borderRadius: "50%",
             backgroundColor: "#F5F5F5",
             overflow: "hidden",
-            border: "4px solid #FFFFFF",
+            border: is916 ? "4px solid #FFFFFF" : "3px solid #FFFFFF",
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
           }}
         >
@@ -196,7 +196,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: is916 ? "40px" : "34px",
+                fontSize: is916 ? "40px" : "30px",
                 fontWeight: "800",
                 color: "#999999",
                 backgroundColor: "#F5F5F5",
@@ -265,8 +265,8 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "60px",
-              marginBottom: "60px",
+              gap: is916 ? "60px" : "50px",
+              marginBottom: is916 ? "60px" : "50px",
             }}
           >
             {sortedWinners.slice(0, 4).map((winner) => (
