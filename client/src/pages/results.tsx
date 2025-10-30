@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ChartBar, LogOut, Trophy, ArrowLeft, Share2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { ElectionResults } from "@shared/schema";
 import ExportResultsImage, { type ExportResultsImageHandle, type AspectRatio } from "@/components/ExportResultsImage";
 import {
@@ -36,7 +36,7 @@ export default function ResultsPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const electionId = searchParams.get('electionId');
 
-  const { data: results, isLoading } = useQuery<ElectionResults | null>({
+  const { data: results, isLoading, refetch } = useQuery<ElectionResults | null>({
     queryKey: electionId ? ["/api/results", electionId] : ["/api/results/latest"],
     queryFn: electionId 
       ? async () => {
@@ -45,6 +45,10 @@ export default function ResultsPage() {
           return response.json();
         }
       : undefined,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.isActive ? 3000 : false;
+    },
   });
 
   const { data: winners } = useQuery<Winner[]>({
@@ -194,126 +198,188 @@ export default function ResultsPage() {
             <CardHeader>
               <CardTitle>Nenhum resultado disponível</CardTitle>
               <CardDescription>
-                Não há eleições finalizadas para exibir resultados
+                Não há eleições para exibir resultados
               </CardDescription>
             </CardHeader>
           </Card>
         ) : (
           <div className="space-y-8 sm:space-y-12">
-            {results.positions.map((position) => {
+            {results.positions
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((position) => {
               const sortedCandidates = [...position.candidates].sort(
                 (a, b) => b.voteCount - a.voteCount
               );
               const winner = sortedCandidates[0];
               const totalVotes = sortedCandidates.reduce((sum, c) => sum + c.voteCount, 0);
 
+              const getPositionStatus = () => {
+                if (position.status === 'completed' && position.winnerId) {
+                  return {
+                    type: 'completed',
+                    bgClass: 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800',
+                    textClass: 'text-green-800 dark:text-green-200',
+                    descClass: 'text-green-600 dark:text-green-300',
+                    label: 'Concluído'
+                  };
+                } else if (position.status === 'active') {
+                  return {
+                    type: 'active',
+                    bgClass: 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800',
+                    textClass: 'text-blue-800 dark:text-blue-200',
+                    descClass: 'text-blue-600 dark:text-blue-300',
+                    label: `Em Votação - ${position.currentScrutiny}º Escrutínio`
+                  };
+                } else if (position.status === 'pending') {
+                  return {
+                    type: 'pending',
+                    bgClass: 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800',
+                    textClass: 'text-gray-800 dark:text-gray-200',
+                    descClass: 'text-gray-600 dark:text-gray-400',
+                    label: 'Aguardando Votação'
+                  };
+                }
+                return {
+                  type: 'other',
+                  bgClass: 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800',
+                  textClass: 'text-amber-900 dark:text-amber-100',
+                  descClass: 'text-amber-600 dark:text-amber-300',
+                  label: 'Indefinido'
+                };
+              };
+
+              const statusInfo = getPositionStatus();
+
               return (
                 <div key={position.positionId} data-testid={`position-${position.positionId}`}>
                   <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                     <span>{position.positionName}</span>
                     <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                      ({totalVotes} votos)
+                      ({totalVotes} votos • {position.candidates.length} candidatos)
                     </span>
                   </h2>
 
-                  {/* Show position status: Concluído or Indefinido */}
-                  {position.winnerId ? (
-                    <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                        Resultado: Concluído
+                  <div className={`mb-4 p-3 border rounded-lg ${statusInfo.bgClass}`}>
+                    <p className={`text-sm font-medium ${statusInfo.textClass}`}>
+                      Status: {statusInfo.label}
+                    </p>
+                    {position.winnerId && statusInfo.type === 'completed' && (() => {
+                      const electedCandidate = position.candidates.find(c => c.candidateId === position.winnerId);
+                      return electedCandidate ? (
+                        <p className={`text-xs mt-1 ${statusInfo.descClass}`}>
+                          Eleito: {electedCandidate.candidateName} com {electedCandidate.voteCount} votos
+                          {electedCandidate.wonAtScrutiny && ` (${electedCandidate.wonAtScrutiny}º Escrutínio)`}
+                        </p>
+                      ) : null;
+                    })()}
+                    {position.status === 'active' && (
+                      <p className={`text-xs mt-1 ${statusInfo.descClass}`}>
+                        Votação em andamento. Resultados atualizados automaticamente.
                       </p>
-                      {(() => {
-                        const electedCandidate = position.candidates.find(c => c.candidateId === position.winnerId);
-                        return electedCandidate ? (
-                          <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                            Eleito: {electedCandidate.candidateName} com {electedCandidate.voteCount} votos
-                          </p>
-                        ) : null;
-                      })()}
-                    </div>
-                  ) : results.isActive ? (
-                    <div className="mb-4 p-3 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 rounded-lg">
-                      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                        Resultado: Indefinido (nenhum candidato alcançou maioria absoluta)
+                    )}
+                    {position.status === 'pending' && position.candidates.length > 0 && (
+                      <p className={`text-xs mt-1 ${statusInfo.descClass}`}>
+                        Candidatos já selecionados. Aguardando início da votação.
                       </p>
-                    </div>
-                  ) : null}
+                    )}
+                  </div>
 
                   <div className="space-y-3">
-                    {sortedCandidates.map((candidate, index) => {
-                      const isWinner = index === 0 && candidate.voteCount > 0;
-                      const percentage = totalVotes > 0 
-                        ? ((candidate.voteCount / totalVotes) * 100).toFixed(1) 
-                        : "0.0";
+                    {position.candidates.length === 0 ? (
+                      <Card className="border-dashed">
+                        <CardContent className="p-6 text-center">
+                          <p className="text-sm text-muted-foreground">
+                            Nenhum candidato adicionado ainda para este cargo
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      sortedCandidates.map((candidate, index) => {
+                        const isElected = candidate.candidateId === position.winnerId && position.status === 'completed';
+                        const isLeading = index === 0 && candidate.voteCount > 0 && position.status === 'active';
+                        const percentage = totalVotes > 0 
+                          ? ((candidate.voteCount / totalVotes) * 100).toFixed(1) 
+                          : "0.0";
 
-                      // Helper function to get scrutiny label
-                      const getScrutinyLabel = (scrutiny?: number) => {
-                        if (!scrutiny) return null;
-                        const ordinals = ["1º", "2º", "3º"];
-                        return `Eleito no ${ordinals[scrutiny - 1]} Escrutínio`;
-                      };
+                        const getScrutinyLabel = (scrutiny?: number) => {
+                          if (!scrutiny) return null;
+                          const ordinals = ["1º", "2º", "3º"];
+                          return `Eleito no ${ordinals[scrutiny - 1]} Escrutínio`;
+                        };
 
-                      return (
-                        <Card
-                          key={candidate.candidateId}
-                          className={
-                            isWinner
-                              ? "bg-amber-50 dark:bg-amber-950/30 border-l-4 border-l-primary shadow-md"
-                              : "border-border"
-                          }
-                          data-testid={`candidate-result-${candidate.candidateId}`}
-                        >
-                          <CardContent className="p-4 sm:p-6">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                {isWinner && (
-                                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
-                                )}
-                                <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
-                                  <AvatarImage 
-                                    src={candidate.photoUrl} 
-                                    alt={candidate.candidateName}
-                                  />
-                                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                                    {candidate.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-base sm:text-lg truncate">
-                                    {candidate.candidateName}
+                        return (
+                          <Card
+                            key={candidate.candidateId}
+                            className={
+                              isElected
+                                ? "bg-green-50 dark:bg-green-950/30 border-l-4 border-l-green-600 shadow-md"
+                                : isLeading
+                                ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-600 shadow-md"
+                                : "border-border"
+                            }
+                            data-testid={`candidate-result-${candidate.candidateId}`}
+                          >
+                            <CardContent className="p-4 sm:p-6">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                  {isElected && (
+                                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400 shrink-0" />
+                                  )}
+                                  <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
+                                    <AvatarImage 
+                                      src={candidate.photoUrl} 
+                                      alt={candidate.candidateName}
+                                    />
+                                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                      {candidate.candidateName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-base sm:text-lg truncate">
+                                      {candidate.candidateName}
+                                    </p>
+                                    {isElected && candidate.wonAtScrutiny && (
+                                      <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">
+                                        {getScrutinyLabel(candidate.wonAtScrutiny)}
+                                      </p>
+                                    )}
+                                    {isElected && !candidate.wonAtScrutiny && (
+                                      <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">
+                                        Eleito
+                                      </p>
+                                    )}
+                                    {isLeading && (
+                                      <p className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 font-medium">
+                                        Liderando
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-xl sm:text-2xl font-bold" data-testid={`vote-count-${candidate.candidateId}`}>
+                                    {candidate.voteCount}
                                   </p>
-                                  {isWinner && candidate.wonAtScrutiny && (
-                                    <p className="text-xs sm:text-sm text-primary font-medium">
-                                      {getScrutinyLabel(candidate.wonAtScrutiny)}
-                                    </p>
-                                  )}
-                                  {isWinner && !candidate.wonAtScrutiny && (
-                                    <p className="text-xs sm:text-sm text-primary font-medium">
-                                      Vencedor
-                                    </p>
-                                  )}
+                                  <p className="text-xs sm:text-sm text-muted-foreground">
+                                    {percentage}%
+                                  </p>
                                 </div>
                               </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-xl sm:text-2xl font-bold" data-testid={`vote-count-${candidate.candidateId}`}>
-                                  {candidate.voteCount}
-                                </p>
-                                <p className="text-xs sm:text-sm text-muted-foreground">
-                                  {percentage}%
-                                </p>
+                              
+                              <div className="mt-3 sm:mt-4 bg-muted/30 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-500 rounded-full ${
+                                    isElected ? 'bg-green-600 dark:bg-green-500' :
+                                    isLeading ? 'bg-blue-600 dark:bg-blue-500' :
+                                    'bg-primary'
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                />
                               </div>
-                            </div>
-                            
-                            <div className="mt-3 sm:mt-4 bg-muted/30 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="bg-primary h-full transition-all duration-500 rounded-full"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               );
