@@ -55,6 +55,7 @@ export default function AdminPage() {
   });
   
   const exportImageRef = useRef<ExportResultsImageHandle>(null);
+  const [exportAspectRatio, setExportAspectRatio] = useState<"9:16" | "4:5">("9:16");
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
     queryKey: ["/api/elections/active"],
@@ -1245,6 +1246,7 @@ export default function AdminPage() {
         <ExportResultsImage
           ref={exportImageRef}
           electionTitle={activeElection.name}
+          aspectRatio={exportAspectRatio}
           winners={results.positions
             .filter(p => p.winnerId)
             .map(p => {
