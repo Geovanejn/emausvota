@@ -233,7 +233,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             style={{
               textAlign: "center",
               padding: is916 ? "10px 0" : "8px 0",
-              marginBottom: is916 ? "120px" : "50px",
+              marginBottom: is916 ? "120px" : "100px",
             }}
           >
             <h1
@@ -280,7 +280,7 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
               style={{
                 display: "flex",
                 justifyContent: "center",
-                marginBottom: is916 ? "120px" : "50px",
+                marginBottom: is916 ? "120px" : "100px",
               }}
             >
               <WinnerCard winner={sortedWinners[4]} />
