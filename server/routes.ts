@@ -31,7 +31,7 @@ function generateVerificationCode(): string {
 async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
   try {
     await resend.emails.send({
-      from: "Emaús Vota <onboarding@resend.dev>",
+      from: "Emaús Vota <suporte@emausvota.com.br>" ,
       to: email,
       subject: "Seu código de verificação - Emaús Vota",
       html: `
