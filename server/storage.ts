@@ -518,7 +518,7 @@ export class SQLiteStorage implements IStorage {
   getElectionAttendance(electionId: number): ElectionAttendance[] {
     const stmt = db.prepare(`
       SELECT * FROM election_attendance 
-      WHERE election_id = ?
+      WHERE election_id = ? AND election_position_id IS NULL
       ORDER BY member_id
     `);
     const rows = stmt.all(electionId) as any[];
@@ -755,6 +755,17 @@ export class SQLiteStorage implements IStorage {
     // Get present count for this position from attendance snapshot
     const presentCount = this.getPresentCountForPosition(activePosition.id);
     if (presentCount === 0) return;
+
+    // First, check if ALL present members have voted
+    const totalVotesStmt = db.prepare(
+      "SELECT COUNT(DISTINCT voter_id) as count FROM votes WHERE position_id = ? AND election_id = ? AND scrutiny_round = ?"
+    );
+    const totalVotesResult = totalVotesStmt.get(positionId, electionId, scrutinyRound) as { count: number };
+    
+    // Only check for winner if all present members have voted
+    if (totalVotesResult.count < presentCount) {
+      return; // Wait for all votes
+    }
 
     const majorityThreshold = Math.floor(presentCount / 2) + 1;
 
