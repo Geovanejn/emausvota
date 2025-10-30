@@ -22,13 +22,18 @@ import {
 import type { AuthResponse } from "@shared/schema";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 async function sendVerificationEmail(email: string, code: string): Promise<boolean> {
+  if (!resend) {
+    console.log(`[EMAIL DISABLED] Verification code for ${email}: ${code}`);
+    return false;
+  }
+  
   try {
     await resend.emails.send({
       from: "Emaús Vota <suporte@emausvota.com.br>" ,
