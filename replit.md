@@ -62,7 +62,7 @@ Preferred communication style: Simple, everyday language.
   - Shadows: Subtle 0 4px 12px rgba(0,0,0,0.1) on cards
   - Layout optimized to fit within 1920px (Stories) and 1350px (Feed) canvas heights
 - ✅ **Fixed duplicate endpoints** - Removed authenticated winners endpoint, now uses single public endpoint
-- ✅ **Test data generation** - 10 test members and complete 2024/2025 election with decided winners for all positions
+- ✅ **Database reset** - All member and election data cleared, only admin account remains (UMP Emaús / marketingumpemaus@gmail.com)
 
 ## System Architecture
 
