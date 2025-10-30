@@ -170,7 +170,6 @@ export class SQLiteStorage implements IStorage {
 
   // Finalmente, remove o usuário (se não for admin)
   db.prepare("DELETE FROM users WHERE id = ? AND is_admin = 0").run(id);
-}
   }
 
   getAllPositions(): Position[] {
