@@ -229,6 +229,61 @@ export function initializeDatabase() {
       sqlite.exec("ALTER TABLE election_attendance ADD COLUMN election_position_id INTEGER REFERENCES election_positions(id)");
       console.log("Added election_position_id column to election_attendance table");
     }
+
+    // Migration: Add UNIQUE constraint to candidates table to prevent duplicates
+    const candidatesIndexes = sqlite.prepare("PRAGMA index_list(candidates)").all() as Array<{ name: string }>;
+    const hasUniqueConstraint = candidatesIndexes.some(idx => idx.name.includes('unique_candidate'));
+    
+    if (!hasUniqueConstraint) {
+      console.log("Adding UNIQUE constraint to candidates table...");
+      
+      // First, remove any duplicate candidates keeping only the first one (lowest id)
+      const duplicates = sqlite.prepare(`
+        SELECT user_id, position_id, election_id, MIN(id) as keep_id
+        FROM candidates
+        GROUP BY user_id, position_id, election_id
+        HAVING COUNT(*) > 1
+      `).all() as Array<{ user_id: number; position_id: number; election_id: number; keep_id: number }>;
+      
+      if (duplicates.length > 0) {
+        console.log(`Found ${duplicates.length} duplicate candidate sets. Cleaning up...`);
+        
+        for (const dup of duplicates) {
+          // Delete duplicate candidates (keeping the one with min id)
+          sqlite.prepare(`
+            DELETE FROM candidates 
+            WHERE user_id = ? AND position_id = ? AND election_id = ? AND id != ?
+          `).run(dup.user_id, dup.position_id, dup.election_id, dup.keep_id);
+        }
+        
+        console.log("Removed duplicate candidates");
+      }
+      
+      // Now create a new table with the UNIQUE constraint
+      sqlite.exec("PRAGMA foreign_keys = OFF");
+      sqlite.exec(`
+        CREATE TABLE candidates_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL DEFAULT '',
+          user_id INTEGER NOT NULL DEFAULT 0,
+          position_id INTEGER NOT NULL,
+          election_id INTEGER NOT NULL,
+          UNIQUE(user_id, position_id, election_id),
+          FOREIGN KEY (position_id) REFERENCES positions(id),
+          FOREIGN KEY (election_id) REFERENCES elections(id),
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+        
+        INSERT INTO candidates_new (id, name, email, user_id, position_id, election_id)
+        SELECT id, name, email, user_id, position_id, election_id FROM candidates;
+        
+        DROP TABLE candidates;
+        ALTER TABLE candidates_new RENAME TO candidates;
+      `);
+      sqlite.exec("PRAGMA foreign_keys = ON");
+      console.log("Added UNIQUE constraint to candidates table");
+    }
   } catch (error) {
     console.error("Migration error:", error);
   }

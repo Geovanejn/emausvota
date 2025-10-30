@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, text, unique } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import crypto from "crypto";
@@ -129,7 +129,10 @@ export const candidates = sqliteTable("candidates", {
   userId: integer("user_id").notNull().references(() => users.id), // Reference to user
   positionId: integer("position_id").notNull().references(() => positions.id),
   electionId: integer("election_id").notNull().references(() => elections.id),
-});
+}, (table) => ({
+  // Prevent duplicate candidates for same user, position, and election
+  uniqueCandidate: unique().on(table.userId, table.positionId, table.electionId),
+}));
 
 export const insertCandidateSchema = createInsertSchema(candidates).omit({
   id: true,
