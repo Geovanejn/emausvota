@@ -346,12 +346,12 @@ export class SQLiteStorage implements IStorage {
     
     const newScrutiny = position.current_scrutiny + 1;
     
-    // If advancing to 2nd scrutiny, clear all candidates so admin can select new ones
-    if (newScrutiny === 2) {
-      this.clearCandidatesForPosition(position.position_id, position.election_id);
-    }
+    // Note: We do NOT clear candidates when advancing to 2nd scrutiny
+    // Candidates remain the same across scrutiny rounds
+    // The UNIQUE constraint on (user_id, position_id, election_id) prevents duplicates
+    
     // If advancing to 3rd scrutiny, keep only top 2 candidates from 2nd scrutiny
-    else if (newScrutiny === 3) {
+    if (newScrutiny === 3) {
       // Get vote counts for all candidates in 2nd scrutiny
       const candidatesStmt = db.prepare(`
         SELECT c.id, c.user_id, COUNT(v.id) as vote_count
