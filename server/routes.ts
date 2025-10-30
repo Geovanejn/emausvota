@@ -536,6 +536,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(candidate);
     } catch (error) {
       console.error("Create candidate error:", error);
+      
+      // Handle UNIQUE constraint violation
+      if (error instanceof Error && error.message.includes("UNIQUE constraint")) {
+        return res.status(409).json({ message: "Este candidato já foi adicionado para este cargo" });
+      }
+      
       res.status(400).json({ 
         message: error instanceof Error ? error.message : "Erro ao adicionar candidato" 
       });
