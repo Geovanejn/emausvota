@@ -1,6 +1,6 @@
 import { useRef, forwardRef, useImperativeHandle } from "react";
 import html2canvas from "html2canvas";
-import backgroundUrl from "@assets/fundo_1761781968067.png";
+import backgroundUrl from "@assets/Fundo Layout stories_1761783891823.png";
 import logoUrl from "@assets/EMAÚS v3 sem fundo_1761783643511.png";
 
 interface Winner {
@@ -214,7 +214,10 @@ const ExportResultsImage = forwardRef<ExportResultsImageHandle, ExportResultsIma
             backgroundImage: `url(${backgroundUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            padding: is916 ? "60px 50px" : "50px 40px",
+            paddingTop: "180px",
+            paddingLeft: is916 ? "50px" : "40px",
+            paddingRight: is916 ? "50px" : "40px",
+            paddingBottom: "150px",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
             display: "flex",
             flexDirection: "column",

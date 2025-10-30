@@ -47,7 +47,8 @@ Preferred communication style: Simple, everyday language.
 - ✅ **Share results button** - Export election results as professional, institutional image with winners, votes, UMP logo and scripture verse
 - ✅ **Multi-format image export** - Admin can choose between 9:16 (Stories - 1080x1920) or 4:5 (Feed - 1080x1350) aspect ratios
 - ✅ **Custom design with user-provided assets:**
-  - Background: Light gray textured background (user-provided image)
+  - Background: "Fundo Layout stories" textured background (user-provided image)
+  - Padding: 180px top, 150px bottom, 50px left/right (Stories)
   - Title: "ELEIÇÃO [YEAR]" bold black text with hollow/outline year (80px/68px font, no background)
   - Cards: All uniform width (480px max), yellow header (#FFD84B) with position name in italic bold
   - Card body: White background with candidate name (uppercase bold) and vote details
