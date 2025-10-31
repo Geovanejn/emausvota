@@ -782,23 +782,23 @@ export class SQLiteStorage implements IStorage {
 
     const majorityThreshold = Math.floor(presentCount / 2) + 1;
 
-    // Get all candidates for this position
-    const candidates = this.getCandidatesByPosition(positionId, electionId);
+    // Use a single optimized query with GROUP BY to find candidate with majority
+    const winnerStmt = db.prepare(`
+      SELECT candidate_id, COUNT(*) as vote_count
+      FROM votes 
+      WHERE position_id = ? AND election_id = ? AND scrutiny_round = ?
+      GROUP BY candidate_id
+      HAVING vote_count >= ?
+      ORDER BY vote_count DESC
+      LIMIT 1
+    `);
+    const winner = winnerStmt.get(positionId, electionId, scrutinyRound, majorityThreshold) as { candidate_id: number; vote_count: number } | undefined;
 
-    // Count votes for each candidate in this scrutiny
-    for (const candidate of candidates) {
-      const voteStmt = db.prepare(
-        "SELECT COUNT(*) as count FROM votes WHERE candidate_id = ? AND election_id = ? AND scrutiny_round = ?"
-      );
-      const voteResult = voteStmt.get(candidate.id, electionId, scrutinyRound) as { count: number };
-
-      if (voteResult.count >= majorityThreshold) {
-        // This candidate has reached majority - set as winner
-        this.setWinner(electionId, candidate.id, positionId, scrutinyRound);
-        // Complete this position
-        this.completePosition(activePosition.id);
-        break;
-      }
+    if (winner) {
+      // This candidate has reached majority - set as winner
+      this.setWinner(electionId, winner.candidate_id, positionId, scrutinyRound);
+      // Complete this position
+      this.completePosition(activePosition.id);
     }
   }
 
@@ -814,8 +814,14 @@ export class SQLiteStorage implements IStorage {
     const election = this.getElectionById(electionId);
     if (!election) return null;
 
-    // Get all election positions for this election
-    const electionPositions = this.getElectionPositions(electionId);
+    // Get all election positions with position names in one query
+    const electionPositions = db.prepare(`
+      SELECT ep.*, p.name as positionName
+      FROM election_positions ep
+      JOIN positions p ON ep.position_id = p.id
+      WHERE ep.election_id = ?
+      ORDER BY ep.order_index
+    `).all(electionId) as any[];
     
     // Get present count
     const presentCount = this.getPresentCount(electionId);
@@ -824,101 +830,105 @@ export class SQLiteStorage implements IStorage {
       electionId: election.id,
       electionName: election.name,
       isActive: election.isActive,
-      currentScrutiny: electionPositions.find(ep => ep.status === 'active')?.currentScrutiny || 1,
+      currentScrutiny: electionPositions.find(ep => ep.status === 'active')?.current_scrutiny || 1,
       presentCount,
       positions: [],
     };
 
+    // Get all candidates with vote counts for current scrutiny
+    const candidatesWithVotes = db.prepare(`
+      SELECT 
+        c.id as candidateId,
+        c.name as candidateName,
+        c.email as candidateEmail,
+        c.position_id as positionId,
+        ep.current_scrutiny as currentScrutiny,
+        COALESCE(v.vote_count, 0) as voteCount
+      FROM candidates c
+      INNER JOIN election_positions ep ON c.position_id = ep.position_id AND c.election_id = ep.election_id
+      LEFT JOIN (
+        SELECT v.candidate_id, v.scrutiny_round, COUNT(*) as vote_count
+        FROM votes v
+        INNER JOIN election_positions ep2 ON v.position_id = ep2.position_id AND v.election_id = ep2.election_id
+        WHERE v.election_id = ? AND v.scrutiny_round = ep2.current_scrutiny
+        GROUP BY v.candidate_id, v.scrutiny_round
+      ) v ON c.id = v.candidate_id AND v.scrutiny_round = ep.current_scrutiny
+      WHERE c.election_id = ?
+      ORDER BY c.position_id, voteCount DESC
+    `).all(electionId, electionId) as any[];
+
+    // Get all winners in one query
+    const winners = db.prepare(`
+      SELECT position_id as positionId, candidate_id as candidateId, won_at_scrutiny as wonAtScrutiny
+      FROM election_winners
+      WHERE election_id = ?
+    `).all(electionId) as any[];
+    
+    const winnersMap = new Map(winners.map(w => [w.positionId, { candidateId: w.candidateId, wonAtScrutiny: w.wonAtScrutiny }]));
+
+    // Get total voters per position in one query
+    const votersPerPosition = db.prepare(`
+      SELECT position_id, scrutiny_round, COUNT(DISTINCT voter_id) as count
+      FROM votes
+      WHERE election_id = ?
+      GROUP BY position_id, scrutiny_round
+    `).all(electionId) as any[];
+    
+    const votersMap = new Map(votersPerPosition.map(v => [`${v.position_id}_${v.scrutiny_round}`, v.count]));
+
     for (const electionPosition of electionPositions) {
-      // Get position details
-      const positionStmt = db.prepare("SELECT * FROM positions WHERE id = ?");
-      const positionRow = positionStmt.get(electionPosition.positionId) as any;
-      if (!positionRow) continue;
+      const currentScrutiny = electionPosition.current_scrutiny;
+      const positionId = electionPosition.position_id;
       
-      const position = {
-        id: positionRow.id,
-        name: positionRow.name,
-      };
-      
-      const currentScrutiny = electionPosition.currentScrutiny;
-      
-      // Get candidates for this position
-      let candidates = this.getCandidatesByPosition(position.id, electionId);
-      
-      // Count total voters who voted for this position in current scrutiny
-      const totalVotersStmt = db.prepare(
-        "SELECT COUNT(DISTINCT voter_id) as count FROM votes WHERE position_id = ? AND election_id = ? AND scrutiny_round = ?"
-      );
-      const totalVotersResult = totalVotersStmt.get(position.id, electionId, currentScrutiny) as { count: number };
-      const totalVoters = totalVotersResult.count;
-      
-      // Calculate majority threshold based on present members
-      // For scrutiny 1 and 2: half + 1
-      // For scrutiny 3: simple majority (whoever has more votes wins)
+      // Calculate majority threshold
       let majorityThreshold: number;
       if (currentScrutiny === 3) {
-        // Scrutiny 3: simple majority (just need most votes)
         majorityThreshold = 1;
       } else {
-        // Scrutiny 1 and 2: half + 1 of present members
         majorityThreshold = Math.floor(presentCount / 2) + 1;
       }
       
-      // Get vote counts for each candidate in current scrutiny
-      const candidateResults = candidates.map((candidate) => {
-        const voteStmt = db.prepare(
-          "SELECT COUNT(*) as count FROM votes WHERE candidate_id = ? AND election_id = ? AND scrutiny_round = ?"
-        );
-        const voteResult = voteStmt.get(candidate.id, electionId, currentScrutiny) as { count: number };
-        
-        return {
-          candidateId: candidate.id,
-          candidateName: candidate.name,
-          candidateEmail: candidate.email,
-          photoUrl: "", // Will be filled with Gravatar URL in route
-          voteCount: voteResult.count,
+      // Get candidates for this position from pre-fetched data
+      const positionCandidates = candidatesWithVotes
+        .filter(c => c.positionId === positionId && c.currentScrutiny === currentScrutiny)
+        .map(c => ({
+          candidateId: c.candidateId,
+          candidateName: c.candidateName,
+          candidateEmail: c.candidateEmail,
+          photoUrl: "",
+          voteCount: c.voteCount,
           isElected: false,
           electedInScrutiny: undefined as number | undefined,
-        };
-      });
+        }));
 
-      // Sort by vote count descending
-      candidateResults.sort((a, b) => b.voteCount - a.voteCount);
+      const totalVoters = votersMap.get(`${positionId}_${currentScrutiny}`) || 0;
 
       // Determine if someone won
       let winnerId: number | undefined;
       let winnerScrutiny: number | undefined;
       let needsNextScrutiny = false;
 
-      // Check if there's a winner override from admin (from election_winners table)
-      const winnerStmt = db.prepare("SELECT candidate_id, won_at_scrutiny FROM election_winners WHERE election_id = ? AND position_id = ?");
-      const winnerRow = winnerStmt.get(electionId, position.id) as any;
-      
-      if (winnerRow) {
-        winnerId = winnerRow.candidate_id;
-        winnerScrutiny = winnerRow.won_at_scrutiny;
-      } else if (currentScrutiny < 3 && candidateResults.length > 0 && candidateResults[0].voteCount >= majorityThreshold) {
-        // Scrutiny 1 or 2: Someone reached half+1 of present members
-        winnerId = candidateResults[0].candidateId;
+      const winner = winnersMap.get(positionId);
+      if (winner) {
+        winnerId = winner.candidateId;
+        winnerScrutiny = winner.wonAtScrutiny;
+      } else if (currentScrutiny < 3 && positionCandidates.length > 0 && positionCandidates[0].voteCount >= majorityThreshold) {
+        winnerId = positionCandidates[0].candidateId;
         winnerScrutiny = currentScrutiny;
       } else if (currentScrutiny === 3) {
-        // Third scrutiny - simple majority (most votes wins)
-        if (candidateResults.length > 1 && candidateResults[0].voteCount === candidateResults[1].voteCount) {
-          // Tie - admin must choose
-          needsNextScrutiny = false; // Can't advance further
-        } else if (candidateResults.length > 0 && candidateResults[0].voteCount > 0) {
-          // Top candidate wins with simple majority
-          winnerId = candidateResults[0].candidateId;
+        if (positionCandidates.length > 1 && positionCandidates[0].voteCount === positionCandidates[1].voteCount) {
+          needsNextScrutiny = false;
+        } else if (positionCandidates.length > 0 && positionCandidates[0].voteCount > 0) {
+          winnerId = positionCandidates[0].candidateId;
           winnerScrutiny = 3;
         }
       } else if (currentScrutiny < 3 && electionPosition.status === 'active') {
-        // No winner yet, need next scrutiny
         needsNextScrutiny = true;
       }
 
       // Mark elected candidate
       if (winnerId) {
-        const electedCandidate = candidateResults.find(c => c.candidateId === winnerId);
+        const electedCandidate = positionCandidates.find(c => c.candidateId === winnerId);
         if (electedCandidate) {
           electedCandidate.isElected = true;
           electedCandidate.electedInScrutiny = winnerScrutiny;
@@ -926,17 +936,17 @@ export class SQLiteStorage implements IStorage {
       }
 
       results.positions.push({
-        positionId: position.id,
-        positionName: position.name,
+        positionId: electionPosition.position_id,
+        positionName: electionPosition.positionName,
         status: electionPosition.status,
         currentScrutiny,
-        orderIndex: electionPosition.orderIndex,
+        orderIndex: electionPosition.order_index,
         totalVoters,
         majorityThreshold,
         needsNextScrutiny,
         winnerId,
         winnerScrutiny,
-        candidates: candidateResults,
+        candidates: positionCandidates,
       });
     }
 

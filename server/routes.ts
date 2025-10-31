@@ -643,17 +643,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/candidates/all", authenticateToken, async (req: AuthRequest, res) => {
+  app.get("/api/elections/:electionId/positions/:positionId/candidates", authenticateToken, async (req: AuthRequest, res) => {
     try {
-      const candidates = storage.getAllCandidates();
-      // Add photo URLs to candidates
+      const electionId = parseInt(req.params.electionId);
+      const positionId = parseInt(req.params.positionId);
+      
+      if (isNaN(electionId) || isNaN(positionId)) {
+        return res.status(400).json({ message: "IDs inválidos" });
+      }
+
+      const candidates = storage.getCandidatesByPosition(positionId, electionId);
       const candidatesWithPhotos = candidates.map(candidate => ({
         ...candidate,
         photoUrl: getGravatarUrl(candidate.email),
       }));
+      
       res.json(candidatesWithPhotos);
     } catch (error) {
-      console.error("Get all candidates error:", error);
+      console.error("Get position candidates error:", error);
       res.status(500).json({ 
         message: error instanceof Error ? error.message : "Erro ao buscar candidatos" 
       });

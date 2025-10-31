@@ -311,6 +311,38 @@ export function initializeDatabase() {
     console.error("Migration error:", error);
   }
 
+  console.log("Creating performance indexes...");
+  try {
+    sqlite.exec(`
+      CREATE INDEX IF NOT EXISTS idx_election_attendance_lookup 
+        ON election_attendance(election_id, member_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_election_attendance_position 
+        ON election_attendance(election_position_id) WHERE election_position_id IS NOT NULL;
+      
+      CREATE INDEX IF NOT EXISTS idx_election_positions_status 
+        ON election_positions(election_id, status, order_index);
+      
+      CREATE INDEX IF NOT EXISTS idx_votes_lookup 
+        ON votes(election_id, position_id, scrutiny_round);
+      
+      CREATE INDEX IF NOT EXISTS idx_votes_candidate 
+        ON votes(candidate_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_election_winners_lookup 
+        ON election_winners(election_id, position_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_candidates_position 
+        ON candidates(position_id, election_id);
+      
+      CREATE INDEX IF NOT EXISTS idx_candidates_user 
+        ON candidates(user_id, election_id);
+    `);
+    console.log("Performance indexes created successfully");
+  } catch (error) {
+    console.error("Index creation error:", error);
+  }
+
   const fixedPositions = [
     "Presidente",
     "Vice-Presidente", 

@@ -41,12 +41,14 @@ export default function VotePage() {
   } | null>({
     queryKey: ["/api/elections", activeElection?.id, "positions", "active"],
     enabled: !!activeElection,
+    staleTime: 10000,
   });
 
   // Get candidates only for the active position
-  const { data: allCandidates = [] } = useQuery<CandidateWithEmail[]>({
-    queryKey: ["/api/candidates/all"],
-    enabled: !!activeElection,
+  const { data: activeCandidates = [] } = useQuery<CandidateWithEmail[]>({
+    queryKey: ["/api/elections", activeElection?.id, "positions", activePosition?.positionId, "candidates"],
+    enabled: !!activeElection && !!activePosition,
+    staleTime: 15000,
   });
 
   const voteMutation = useMutation({
@@ -85,9 +87,6 @@ export default function VotePage() {
     logout();
     setLocation("/");
   };
-
-  // Filter candidates for active position only
-  const activeCandidates = allCandidates.filter(c => c.positionId === activePosition?.positionId);
 
   const isLoading = loadingElection || loadingActivePosition;
 

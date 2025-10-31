@@ -62,7 +62,8 @@ export default function AdminPage() {
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
     queryKey: ["/api/elections/active"],
-    staleTime: 5000,
+    staleTime: 15000,
+    refetchInterval: 15000,
   });
 
   const { data: positions = [], isLoading: loadingPositions } = useQuery<Position[]>({
@@ -73,7 +74,7 @@ export default function AdminPage() {
   const { data: candidates = [], isLoading: loadingCandidates } = useQuery<CandidateWithDetails[]>({
     queryKey: ["/api/candidates"],
     enabled: !!activeElection,
-    staleTime: 3000,
+    staleTime: 10000,
   });
 
   const { data: members = [] } = useQuery<Array<{ id: number; fullName: string; email: string; isAdmin: boolean }>>({
@@ -102,7 +103,7 @@ export default function AdminPage() {
   const { data: results } = useQuery<ElectionResults | null>({
     queryKey: ["/api/results/latest"],
     enabled: !!activeElection,
-    staleTime: 2000,
+    staleTime: 10000,
   });
 
   // Election positions for sequential voting
@@ -117,7 +118,7 @@ export default function AdminPage() {
   }>>({
     queryKey: ["/api/elections", activeElection?.id, "positions"],
     enabled: !!activeElection,
-    staleTime: 2000,
+    staleTime: 10000,
   });
 
   // Active position
@@ -132,7 +133,7 @@ export default function AdminPage() {
   } | null>({
     queryKey: ["/api/elections", activeElection?.id, "positions", "active"],
     enabled: !!activeElection,
-    staleTime: 2000,
+    staleTime: 10000,
   });
 
   // Attendance for current election

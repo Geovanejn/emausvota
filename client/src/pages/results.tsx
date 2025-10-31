@@ -40,8 +40,9 @@ export default function ResultsPage() {
     queryKey: electionId ? ["/api/results", electionId] : ["/api/results/latest"],
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.isActive ? 3000 : false;
+      return data?.isActive ? 10000 : false;
     },
+    staleTime: 8000,
   });
 
   const { data: winners } = useQuery<Winner[]>({
