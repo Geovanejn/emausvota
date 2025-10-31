@@ -23,6 +23,19 @@ Preferred communication style: Simple, everyday language.
 - Responsive UI following civic tech design principles
 - Portuguese language interface
 
+**Recent Changes (October 31, 2025)**
+- ✅ **Major Performance Optimizations** - Comprehensive system-wide performance improvements
+  - **Database indexes**: Added 8 composite indexes on frequently queried columns (election_attendance, election_positions, votes, election_winners)
+  - **Query optimization**: Eliminated N+1 query problems by converting loops to single JOIN queries
+    - `checkAndSetAutomaticWinner`: Now uses single GROUP BY query instead of loop
+    - `getElectionResults`: Reduced from 20+ queries to 4 optimized JOINs with proper scrutiny filtering
+  - **Polling reduction**: Increased polling intervals from 3s to 10s on Results page for active elections
+  - **Cache optimization**: Increased staleTime from 2-5s to 10-30s across all pages to reduce redundant fetches
+  - **Admin dashboard**: Reduced from 12+ overlapping queries to staggered queries with smart caching
+  - **Vote page endpoint**: Created position-specific candidate endpoint `/api/elections/:id/positions/:positionId/candidates` to prevent overfetching
+  - **Bug fix**: Corrected getElectionResults to filter votes by current scrutiny round, preventing incorrect vote totals
+  - **Result**: Significantly faster page loads, reduced server load, improved responsiveness
+
 **Recent Changes (October 30, 2025)**
 - ✅ **Real-time results system** - Complete redesign of results display with live updates
   - **Automatic polling**: Results update every 3 seconds during active elections
