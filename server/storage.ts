@@ -550,7 +550,7 @@ export class SQLiteStorage implements IStorage {
     const stmt = db.prepare(`
       SELECT COUNT(*) as count 
       FROM election_attendance 
-      WHERE election_id = ? AND is_present = 1
+      WHERE election_id = ? AND is_present = 1 AND election_position_id IS NULL
     `);
     const result = stmt.get(electionId) as { count: number };
     return result.count;

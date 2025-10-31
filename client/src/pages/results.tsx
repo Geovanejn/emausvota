@@ -38,13 +38,6 @@ export default function ResultsPage() {
 
   const { data: results, isLoading, refetch } = useQuery<ElectionResults | null>({
     queryKey: electionId ? ["/api/results", electionId] : ["/api/results/latest"],
-    queryFn: electionId 
-      ? async () => {
-          const response = await fetch(`/api/results/${electionId}`);
-          if (!response.ok) throw new Error('Failed to fetch results');
-          return response.json();
-        }
-      : undefined,
     refetchInterval: (query) => {
       const data = query.state.data;
       return data?.isActive ? 3000 : false;

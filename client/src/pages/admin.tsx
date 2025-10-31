@@ -62,19 +62,23 @@ export default function AdminPage() {
 
   const { data: activeElection, isLoading: loadingElection } = useQuery<Election | null>({
     queryKey: ["/api/elections/active"],
+    staleTime: 5000,
   });
 
   const { data: positions = [], isLoading: loadingPositions } = useQuery<Position[]>({
     queryKey: ["/api/positions"],
+    staleTime: 60000,
   });
 
   const { data: candidates = [], isLoading: loadingCandidates } = useQuery<CandidateWithDetails[]>({
     queryKey: ["/api/candidates"],
     enabled: !!activeElection,
+    staleTime: 3000,
   });
 
   const { data: members = [] } = useQuery<Array<{ id: number; fullName: string; email: string; isAdmin: boolean }>>({
     queryKey: ["/api/members"],
+    staleTime: 30000,
   });
 
   // Non-admin members for candidate selection
@@ -98,6 +102,7 @@ export default function AdminPage() {
   const { data: results } = useQuery<ElectionResults | null>({
     queryKey: ["/api/results/latest"],
     enabled: !!activeElection,
+    staleTime: 2000,
   });
 
   // Election positions for sequential voting
@@ -112,6 +117,7 @@ export default function AdminPage() {
   }>>({
     queryKey: ["/api/elections", activeElection?.id, "positions"],
     enabled: !!activeElection,
+    staleTime: 2000,
   });
 
   // Active position
@@ -126,6 +132,7 @@ export default function AdminPage() {
   } | null>({
     queryKey: ["/api/elections", activeElection?.id, "positions", "active"],
     enabled: !!activeElection,
+    staleTime: 2000,
   });
 
   // Attendance for current election
@@ -139,17 +146,20 @@ export default function AdminPage() {
   }>>({
     queryKey: ["/api/elections", activeElection?.id, "attendance"],
     enabled: !!activeElection,
+    staleTime: 5000,
   });
 
   // Present count
   const { data: presentCountData } = useQuery<{ presentCount: number }>({
     queryKey: ["/api/elections", activeElection?.id, "attendance", "count"],
     enabled: !!activeElection,
+    staleTime: 5000,
   });
 
   // Election history
   const { data: electionHistory = [] } = useQuery<Election[]>({
     queryKey: ["/api/elections/history"],
+    staleTime: 30000,
   });
 
   const createElectionMutation = useMutation({
